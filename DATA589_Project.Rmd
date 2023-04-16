@@ -43,14 +43,14 @@ head(asc_bc_data) #contain "Ascomycota" data only in BC
 
 ```
 ```{r}
-# # some parameters are list... need to adjust
 asc_bc_data <- apply(asc_bc_data,2,as.character)
 
 # check the working directory and ensure that you have write access to that directory
 getwd()
 #add write acces
-setwd("C:/Users/chanp/Desktop/MDS/Class/Block6/DATA589/Project")
+# setwd("C:/Users/chanp/Desktop/MDS/Class/Block6/DATA589/Project")
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # save the data as CSV
 write.csv(asc_bc_data, "data/asc_bc_data.csv", row.names = FALSE)
 asc_bc_data <- read.csv("data/asc_bc_data.csv")
