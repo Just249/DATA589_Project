@@ -1,0 +1,272 @@
+---
+title: "DATA589_Project"
+author: "Justin"
+date: "2023-04-14"
+output: html_document
+---
+#Dataset   
+URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
+Species: Ascomycota
+
+
+
+#Introduction:   
+Provide a brief description of the study system from which the data come and an outline of what questions you intend on exploring with the data, citing any relevant literature. Length: ca. 1 page.
+
+# Methods:   
+Briefly describe the data and what variables are included. Provide a detailed description of the analytical workflow that was applied to the data, citing any relevant literature and statistical packages employed. There should be enough information that anyone can reproduce the workflow if they had access to the data. Length: As long as necessary.
+
+```{r}
+# install.packages("rgbif")
+library(rgbif)
+?rgbif
+
+species <- c("Ascomycota")
+
+# Get number of occurrence records from rgbif
+#occ_count(scientificName = species) #16069587 in the dataset
+
+#Filter Ascomycota data to only in BC
+asc_count <- occ_count(scientificName = species,
+                          hasCoordinate = TRUE,
+                          country = "CA",
+                          stateProvince = "British Columbia")
+
+asc_bc_data <- occ_data(scientificName = species,
+                           hasCoordinate = TRUE,
+                           country = "CA",
+                           stateProvince = "British Columbia") #* 102 illegal points stored in attr(,“rejects”) ***
+
+class(asc_bc_data) #gbif_data 
+asc_bc_data <- asc_bc_data$data #gbif_data to data.frame
+head(asc_bc_data) #contain "Ascomycota" data only in BC
+
+```
+```{r}
+# # some parameters are list... need to adjust
+asc_bc_data <- apply(asc_bc_data,2,as.character)
+
+# check the working directory and ensure that you have write access to that directory
+getwd()
+#add write acces
+setwd("C:/Users/chanp/Desktop/MDS/Class/Block6/DATA589/Project")
+
+# save the data as CSV
+write.csv(asc_bc_data, "data/asc_bc_data.csv", row.names = FALSE)
+asc_bc_data <- read.csv("data/asc_bc_data.csv")
+
+head(asc_bc_data)
+```
+```{r}
+
+# View(data.frame(names(asc_bc_data)))
+cleaned_asc_bc <- asc_bc_data[ , c("decimalLongitude", "decimalLatitude", "order", "family", "genus", "species", "genericName", "specificEpithet", "coordinateUncertaintyInMeters", "stateProvince", 
+                                  "year", "month", "day", "eventDate", "occurrenceStatus", "class", "countryCode","country", "verbatimLocality", "taxonID", "catalogNumber", "institutionCode", "eventTime",
+                                  "verbatimEventDate", "collectionCode", "gbifID", "verbatimLocality"
+                                  )]
+```
+```{r}
+names(cleaned_asc_bc)
+
+
+```
+
+```{r}
+# convert cleaned_asc_bc to SpatialPointsDataFrame-class
+#reference: https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf
+#           https://scisus.org/2014/05/
+
+names(cleaned_asc_bc)
+sort(unique(cleaned_asc_bc$individualCount))  # notice if some points correspond to zero abundance
+sort(unique(cleaned_asc_bc$occurrenceStatus))  # check for different indications of "absent", which could be in different languages
+absence_rows <- which(cleaned_asc_bc$individualCount == 0 | cleaned_asc_bc$occurrenceStatus %in% c("absent", "Absent", "ABSENT", "ausente", "Ausente", "AUSENTE"))
+length(absence_rows)
+if (length(absence_rows) > 0) {
+  cleaned_asc_bc <- cleaned_asc_bc[-absence_rows, ]
+}
+
+library(sp)
+sp_asc_bc <- SpatialPointsDataFrame(coords = cleaned_asc_bc[, c("decimalLongitude", "decimalLatitude")],
+                                         data = cleaned_asc_bc)
+
+
+proj4string(sp_asc_bc) <- CRS("+proj=longlat +datum=WGS84")
+
+# install.packages("rgdal")
+library(rgdal)
+
+#project basemap to match spu shapefile
+tran_sp_asc_bc <- spTransform(sp_asc_bc, CRS("+proj=aea +lat_0=45 +lon_0=-126 +lat_1=50 +lat_2=58.5 +x_0=1000000 +y_0=0 +datum=NAD83 +units=m +no_defs")) 
+summary(tran_sp_asc_bc)
+
+#update to spTransformed Longitude & Latitude 
+cleaned_asc_bc$decimalLongitude <- tran_sp_asc_bc@coords[, 1]
+cleaned_asc_bc$decimalLatitude <- tran_sp_asc_bc@coords[, 2]
+
+# save the data as CSV
+write.csv(cleaned_asc_bc, "data/clean_sp_asc_bc", row.names = FALSE)
+cleaned_asc_bc <- read.csv("data/clean_sp_asc_bc")
+
+plot(decimalLatitude ~ decimalLongitude,
+     pch = 16,
+     col = "#046C9A",
+     data = cleaned_asc_bc)
+
+
+```
+
+```{r}
+library(spatstat)
+# install.packages("maptools")
+library(maptools)
+#Visualise the data
+plot(decimalLatitude ~ decimalLongitude,
+     pch = 16,
+     col = "#046C9A",
+     data = cleaned_asc_bc)
+
+```
+```{r}
+load("data/BC_Covariates.Rda")
+
+#observe windows
+BC<-DATA
+BC_win <- DATA$Window
+BC_win <- as.owin(DATA$Window)
+plot(BC_win,
+      pch = 16,
+      cols = "red",
+      main = "BC windows data")
+```
+
+```{r}
+#Elevation
+plot(BC$Elevation, main = "Elevation")
+```
+```{r}
+#Forest
+plot(BC$Forest, main = "#Forest")
+```
+
+```{r}
+#Dist_Water
+plot(BC$Dist_Water, main = "Dist_Water")
+```
+
+```{r}
+# names(cleaned_asc_bc$decimalLongitude)
+# class(cleaned_asc_bc$decimalLongitude)
+
+
+# convert into ppp object
+asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
+                     y = cleaned_asc_bc$decimalLatitude,
+                     window = BC_win)
+
+length(asc_data_ppp)
+
+```
+```{r}
+anyDuplicated(asc_data_ppp)
+asc_data_ppp
+```
+
+```{r}
+# length(cleaned_asc_bc$decimalLongitude)
+# length(cleaned_asc_bc$decimalLatitude)
+# length(cleaned_asc_bc$species)
+# length(marks(asc_data_ppp))
+# 
+# marks(asc_data_ppp) <- factor(cleaned_asc_bc$species)
+# length(cleaned_asc_bc$species)
+
+
+plot(asc_data_ppp)
+# 
+# marks(asc_data_ppp) <- BC[[1]]$Region
+
+```
+```{r}
+plot(BC$Elevation, main = "elevation data")
+plot(asc_data_ppp, 
+     which.marks = "species", # Which mark to use
+     col = "grey", #The colour of the window
+     cols = 'red', #The colours of the points
+     cex = 0.6,
+     pch = 18, # The plotting symbol
+     main = "Ascomycota in BC", # The title
+     par(bg="grey40", cex.main = 2),
+     cex = 0.6,
+     legend = T) # Turn of the legend depending on needs`
+```
+
+```{r}
+col_pal <- rev(rainbow(100,end = 4/6))
+
+fig <- persp(BC$Elevation, # source data
+              theta = 10,
+              phi = 40, # rotation
+              expand = 0, # z-axis expansion
+              border = NA, #remove grid borders
+              apron = FALSE, #apron around edge
+              shade = 0.3, # shading
+              box = FALSE, # axes on/off
+              main = "BC Parks Elevation", # title
+              visible = TRUE, #Supporting calculations
+              colmap = col_pal) # colour pallet
+
+perspPoints(asc_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
+
+```
+```{r}
+plot(cut(BC$Elevation,5,
+labels = c("low","low-medium","medium","medium-high","high")),
+par(bg="grey40", cex.main = 2),
+main = "Elevation classes")
+
+points(asc_data_ppp, pch = 16, cex = 0.35, col="green")
+
+cut <- cut(BC$Elevation,5,
+labels = c("low","low-medium","medium","medium-high","high"))
+table(cut[asc_data_ppp]) #most in low elevation
+
+```
+```{r}
+# nn_dist <- nndist(asc_data_ppp)
+# marks(asc_data_ppp) <- nn_dist
+# plot(asc_data_ppp, main = "Ascomycota Distance",which.marks = "Dist", pch = 16)
+BC$Elevation[asc_data_ppp]
+
+library("kdensity")
+asc_density <- density(BC$Elevation[asc_data_ppp])
+province_density <- density(BC$Elevation$v, na.rm=T)
+
+
+plot(province_density, main = "KDE of elevation values within province and park locations", xlab = "Elevation", ylab = "Density", col="blue")
+lines(asc_density, col = "red")
+legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "red"), bty = "n")
+
+# 
+# plot(province_density, main = "KDE of elevation values within province and park locations", xlab = "Elevation", ylab = "Density", col="blue")
+# lines(park_density, col = "red")
+# legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "red"), bty = "n")
+
+```
+
+
+# Results:   
+Length: Describe your statistical findings. Tables and figures should be used throughout. Length: As long as necessary.
+
+```{r}
+```
+
+# Discussion:   
+Provide a brief summary of your findings. Length: ca. 1 page.
+```{r}
+```
+# References:   
+Include references to all necessary literature.
+```{r}
+```
+```{r}
+```
