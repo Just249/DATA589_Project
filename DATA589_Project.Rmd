@@ -179,7 +179,7 @@ plot(BC$Forest, main = "Forest")
 plot(BC$Dist_Water, main = "Dist_Water")
 ```
 
-## Spatial Dataset Convertion and Preparation
+## Spatial Dataset Conversion and Preparation
 
 As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible. 
 ```{r}
@@ -290,7 +290,7 @@ legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "re
 intensity(asc_data_ppp)
 ```
 
-### Homogeneity Studies and Quadrat Test
+### Homogeneity Studies, Quadrat Test and Hotspot Analysis
 
 Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
 
@@ -331,11 +331,85 @@ plot(asc_data_ppp,
 #Quadrat test of homogeneity 
 quadrat.test(Q)
 ```
+```{r}
+R <- bw.ppl(asc_data_ppp)
+LR <- scanLRTS(asc_data_ppp,r=R)
+plot(LR)
 
-Once gain, this has strongly verified the spatial inhomogeneity nature of the fungi distribution :
+pvals <- eval.im(pchisq(LR,
+                        df = 1,
+                        lower.tail = FALSE))
+
+
+#Plot the output
+plot(pvals, main = "Local p-values")
+
+```
+
+
+Once again, this has strongly verified the spatial inhomogeneity nature of the fungi distribution :
+
 - About 90% of the regions have zero point.
 - Less than 5% of the regions contain more than 85% of all the points
 - Quadrat Test also indicates a significant deviation from homogeneity.
+- Hot spot analysis shows only a single prominent hot spot
+
+## Covariate Study
+### Covariate Variable : Elevation
+
+```{r}
+elev <- BC$Elevation
+b <- quantile(elev,probs=(0:4)/4,type=2)
+Zcut <- cut(elev,breaks=b)
+V <- tess(image=Zcut)
+quadratcount(asc_data_ppp,tess=V)
+```
+```{r echo=FALSE}
+rho <- rhohat(asc_data_ppp,elev)
+plot(rho)
+```
+
+
+### Covariate Variable : Forest
+
+```{r}
+forest <- BC$Forest
+b <- quantile(forest,probs=(0:4)/4,type=2)
+Zcut <- cut(forest,breaks=b)
+V <- tess(image=Zcut)
+quadratcount(asc_data_ppp,tess=V)
+```
+```{r echo=FALSE}
+rho <- rhohat(asc_data_ppp,forest)
+plot(rho)
+```
+
+
+
+### Covariate Variable : Distance to Water
+
+```{r}
+dist <- BC$Dist_Water
+b <- quantile(dist,probs=(0:4)/4,type=2)
+Zcut <- cut(dist,breaks=b)
+V <- tess(image=Zcut)
+quadratcount(asc_data_ppp,tess=V)
+```
+
+### Covariate Variable Observation
+
+Observation : 
+
+- For Elevation Level :
+  - It is obvious that the fungi is overwhelmingly correlated to the low elevation level.  
+  - The proportion of occurrence that appears in the lowest elevation sector accounts for more than 97% of the identified points.
+- For Forest and Distance to Water :
+  - It is observed that the fungi is correlated to both Forest and distance .  
+  - The proportion of occurrence that appears in the respective smallest sectors account for about 50% of the identified points.
+
+
+## Second Moment Descriptives
+...to be continued....
 
 
 # Results:   
