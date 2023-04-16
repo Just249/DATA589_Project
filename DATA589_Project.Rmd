@@ -1,16 +1,16 @@
 ---
 title: "DATA589_Project"
-author: "Justin"
+author: "Justin Chan, CM Tong (Kenny)"
 date: "2023-04-14"
 output: html_document
 ---
-#Dataset   
+# Dataset   
 URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
 Species: Ascomycota
 
 
 
-#Introduction:   
+# Introduction:   
 Provide a brief description of the study system from which the data come and an outline of what questions you intend on exploring with the data, citing any relevant literature. Length: ca. 1 page.
 
 # Methods:   
@@ -42,6 +42,11 @@ asc_bc_data <- asc_bc_data$data #gbif_data to data.frame
 head(asc_bc_data) #contain "Ascomycota" data only in BC
 
 ```
+
+## Data Records
+
+Firstly, screen through some sample records of the dataset to see what information it contains and which attributes would and would not be useful and valuable in our analysis.
+
 ```{r}
 asc_bc_data <- apply(asc_bc_data,2,as.character)
 
@@ -57,6 +62,15 @@ asc_bc_data <- read.csv("data/asc_bc_data.csv")
 
 head(asc_bc_data)
 ```
+
+Broadly speaking, from the above records screening, the dataset information can be categorised into the following types according to the dataset attribuets :
+- Species Taxonomy Information : There are many information about the species/family/genus/kingdom/class etc which correspond to the structure umbrella and classification system of the fungi family.
+- Collected Record Information : Contains how observation is made (by human?), date, time and location (coordinate, continents, etc) it is collected, the sample collector/institution
+
+## Data Cleaning
+
+As the dataset contains too many information, including those many detailed timestamps, key information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and perform attributes selection, in order to extract those potentially useful attributes and make our analysis more focused.  The cleaned list if shown below.
+
 ```{r}
 
 # View(data.frame(names(asc_bc_data)))
@@ -70,6 +84,8 @@ names(cleaned_asc_bc)
 
 
 ```
+
+## Initial Coordinates Plotting
 
 ```{r}
 # convert cleaned_asc_bc to SpatialPointsDataFrame-class
@@ -107,12 +123,10 @@ cleaned_asc_bc$decimalLatitude <- tran_sp_asc_bc@coords[, 2]
 write.csv(cleaned_asc_bc, "data/clean_sp_asc_bc", row.names = FALSE)
 cleaned_asc_bc <- read.csv("data/clean_sp_asc_bc")
 
-plot(decimalLatitude ~ decimalLongitude,
-     pch = 16,
-     col = "#046C9A",
-     data = cleaned_asc_bc)
-
-
+#plot(decimalLatitude ~ decimalLongitude,
+#     pch = 16,
+#     col = "#046C9A",
+#     data = cleaned_asc_bc)
 ```
 
 ```{r}
@@ -126,6 +140,18 @@ plot(decimalLatitude ~ decimalLongitude,
      data = cleaned_asc_bc)
 
 ```
+From the initial coordinate plot, we have identified the following very preliminary observation :
+- Points clustering is highly likely as a large group of data points is spotted at the decimal Longitude between 1000K and 1300K and Latitude between 4e+5 and 5e+5.
+- Therefore is only a single major and significant large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering. 
+
+## BC Windows Data Walkthough
+
+Let's see what the BC_Covariates.Rda file provide us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
+- Windows
+- Elevation
+- Forest
+- Dist Water
+
 ```{r}
 load("data/BC_Covariates.Rda")
 
@@ -145,7 +171,7 @@ plot(BC$Elevation, main = "Elevation")
 ```
 ```{r}
 #Forest
-plot(BC$Forest, main = "#Forest")
+plot(BC$Forest, main = "Forest")
 ```
 
 ```{r}
@@ -153,6 +179,9 @@ plot(BC$Forest, main = "#Forest")
 plot(BC$Dist_Water, main = "Dist_Water")
 ```
 
+## Spatial Dataset Convertion and Preparation
+
+As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible. 
 ```{r}
 # names(cleaned_asc_bc$decimalLongitude)
 # class(cleaned_asc_bc$decimalLongitude)
@@ -170,6 +199,7 @@ length(asc_data_ppp)
 anyDuplicated(asc_data_ppp)
 asc_data_ppp
 ```
+
 
 ```{r}
 # length(cleaned_asc_bc$decimalLongitude)
@@ -199,6 +229,7 @@ plot(asc_data_ppp,
      cex = 0.6,
      legend = T) # Turn of the legend depending on needs`
 ```
+
 
 ```{r}
 col_pal <- rev(rainbow(100,end = 4/6))
@@ -252,6 +283,59 @@ legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "re
 # legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "red"), bty = "n")
 
 ```
+
+
+## First Moment Descriptive Statistics
+```{r}
+intensity(asc_data_ppp)
+```
+
+### Homogeneity Studies and Quadrat Test
+
+Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
+
+
+```{r}
+Q <- quadratcount(asc_data_ppp,
+                  nx = 10,
+                  ny = 10)
+
+#Plot the output 
+plot(asc_data_ppp,
+     pch = 16,
+     cex = 0.5,
+     cols = "#046C9A",
+     main = " Ascomycota Locations - Quadrat Count")
+
+plot(Q, cex = 2, col = "red", add = T)
+
+```
+
+```{r}
+plot(intensity(Q, image = T),
+     main = "Beilschmiedia pendula intensity")
+
+plot(asc_data_ppp,
+     pch = 16,
+     cex = 0.6,
+     cols = "white",
+     add = T)
+
+plot(asc_data_ppp,
+     pch = 16,
+     cex = 0.5,
+     cols = "black",
+     add = T)
+```
+```{r}
+#Quadrat test of homogeneity 
+quadrat.test(Q)
+```
+
+Once gain, this has strongly verified the spatial inhomogeneity nature of the fungi distribution :
+- About 90% of the regions have zero point.
+- Less than 5% of the regions contain more than 85% of all the points
+- Quadrat Test also indicates a significant deviation from homogeneity.
 
 
 # Results:   
