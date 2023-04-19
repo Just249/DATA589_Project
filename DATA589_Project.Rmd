@@ -570,7 +570,7 @@ From the plot, it's observed that :
 - there is room for improvement for the model
 
 
-##
+## Higher Order Polynomial Fitting with Spline and Validation
 As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
 ```{r}
 library(splines)
