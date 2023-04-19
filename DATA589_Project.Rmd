@@ -2,13 +2,17 @@
 title: "DATA589_Project"
 author: "Justin Chan, CM Tong (Kenny)"
 date: "2023-04-14"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 # Dataset   
 URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
 Species: Ascomycota
 
-
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
 
 # Introduction:   
 Provide a brief description of the study system from which the data come and an outline of what questions you intend on exploring with the data, citing any relevant literature. Length: ca. 1 page.
@@ -64,12 +68,13 @@ head(asc_bc_data)
 ```
 
 Broadly speaking, from the above records screening, the dataset information can be categorised into the following types according to the dataset attribuets :
-- Species Taxonomy Information : There are many information about the species/family/genus/kingdom/class etc which correspond to the structure umbrella and classification system of the fungi family.
+
+- Species Taxonomy Information : There are many information about the species/family/genus/kingdom/class etc which correspond to the structural classification system of the fungi family.
 - Collected Record Information : Contains how observation is made (by human?), date, time and location (coordinate, continents, etc) it is collected, the sample collector/institution
 
 ## Data Cleaning
 
-As the dataset contains too many information, including those many detailed timestamps, key information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and perform attributes selection, in order to extract those potentially useful attributes and make our analysis more focused.  The cleaned list if shown below.
+As the dataset contains too many information, including many detailed timestamps, key information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and perform attributes selection, in order to extract those potentially useful attributes and make our analysis more focused.  The cleaned list if shown below.
 
 ```{r}
 
@@ -141,12 +146,14 @@ plot(decimalLatitude ~ decimalLongitude,
 
 ```
 From the initial coordinate plot, we have identified the following very preliminary observation :
+
 - Points clustering is highly likely as a large group of data points is spotted at the decimal Longitude between 1000K and 1300K and Latitude between 4e+5 and 5e+5.
 - Therefore is only a single major and significant large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering. 
 
 ## BC Windows Data Walkthough
 
 Let's see what the BC_Covariates.Rda file provide us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
+
 - Windows
 - Elevation
 - Forest
@@ -297,8 +304,8 @@ Note that the intensity is a very small number.  This is consistent with our plo
 
 ```{r}
 Q <- quadratcount(asc_data_ppp,
-                  nx = 10,
-                  ny = 10)
+                  nx = 4,
+                  ny = 4)
 
 #Plot the output 
 plot(asc_data_ppp,
@@ -313,7 +320,7 @@ plot(Q, cex = 2, col = "red", add = T)
 
 ```{r}
 plot(intensity(Q, image = T),
-     main = "Beilschmiedia pendula intensity")
+     main = "Ascomycota intensity")
 
 plot(asc_data_ppp,
      pch = 16,
@@ -334,7 +341,8 @@ quadrat.test(Q)
 ```{r}
 R <- bw.ppl(asc_data_ppp)
 LR <- scanLRTS(asc_data_ppp,r=R)
-plot(LR)
+plot(LR,"Likelihood Ratio Test")
+plot(asc_data_ppp$window,add=T)
 
 pvals <- eval.im(pchisq(LR,
                         df = 1,
@@ -343,7 +351,7 @@ pvals <- eval.im(pchisq(LR,
 
 #Plot the output
 plot(pvals, main = "Local p-values")
-
+plot(asc_data_ppp$window,add=T)
 ```
 
 
@@ -409,14 +417,230 @@ Observation :
 
 
 ## Second Moment Descriptives
-...to be continued....
 
-
-# Results:   
-Length: Describe your statistical findings. Tables and figures should be used throughout. Length: As long as necessary.
+### Ripley's K-function
 
 ```{r}
+# Bootstrapped CIs
+# rank = 1 means the max and min
+# Border correction is to correct for edges around the window
+# values will be used for CI
+E_asc <- envelope(asc_data_ppp,
+                  Kest,
+                  correction="border",
+                  rank = 1,
+                  nsim = 19,
+                  fix.n = T)
+
+# visualise the results
+plot(E_asc,
+     main = "",
+     lwd = 2,
+     xlim=c(0,120000))
+
 ```
+
+Now, we are going to correct for inhomogeneity... 
+```{r}
+lambda_asc <- density(asc_data_ppp, bw.ppl)
+Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
+
+#Estimate a strictly positive density
+lambda_asc_pos <- density(asc_data_ppp,
+                          sigma=bw.ppl,
+                          positive=TRUE)
+
+#Simulation envelope (with points drawn from the estimated intensity)
+E_asc_inhom <- envelope(asc_data_ppp,
+                        Kinhom,
+                        simulate = expression(rpoispp(lambda_asc_pos)),
+                        correction="border",
+                        rank = 1,
+                        nsim = 19,
+                        fix.n = TRUE)
+
+# visualise the results
+# par(mfrow = c(1,2))
+plot(E_asc_inhom,
+     main = "Ripley's K-function (Inhomegeneity)",
+     lwd = 2,
+     xlim=c(0,120000))
+
+```
+
+For homogeneous case, the observed data show a strong clustering at small r value range.  When corrected for inhomogeneity, such clustering pattern is no longer observed.
+
+### Pair Correlation Function
+```{r}
+# Estimate the g function
+pcf_asc <- pcf(asc_data_ppp)
+
+pcf_asc
+plot(pcf_asc,xlim=c(0,120000),main="Pair Correlation Function")
+```
+The above estimator also assumes homogeneity.  Let's relax this assumption.
+
+```{r}
+#Simulation envelope (with points drawn from the estimated intensity)
+pcf_asc_inhom <- envelope(asc_data_ppp,
+                          pcfinhom,
+                          simulate = expression(rpoispp(lambda_asc_pos)),
+                          rank = 1,
+                          nsim = 19)
+
+
+plot(pcf_asc_inhom,
+     xlim = c(0,120000),
+     main = "",
+     lwd = 2)
+
+```
+When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
+
+
+### Model Fitting and Selection with AIC
+```{r}
+fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
+fit
+```
+
+Elevation and Forest are significant but Dist_Water isn't.  OK, then try higher order.
+
+```{r}
+fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2), data = BC)
+fit
+```
+OK, after trying several rounds, the following seems to be a improved fit :
+```{r}
+fit_simple <- ppm(asc_data_ppp ~ Elevation + Forest, data = BC)
+fit_simple
+fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Forest + I(Forest^2), data = BC)
+fit
+```
+Now, let's see if the complicated model is worth it.
+```{r}
+#AIC values
+AIC(fit); AIC(fit_simple)
+#Delta AIC
+AIC(fit_simple) - AIC(fit)
+```
+Also, conduct a anova LRT test to compare the two models :
+```{r}
+anova(fit_simple, fit, test = "LRT")
+```
+
+The following conclusion is drawn :
+- The model with quadratic terms provides a better fit to the data
+- With the delta AIC of 44, the extra complexity is well supported.
+- So, a good model should be 
+
+</br>
+<center>
+$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0.000003~\mathrm{elevation}(u)^2~-~0.042~\mathrm{forest}(u)~+~0.00018~\mathrm{forest}(u)^2}$ 
+</center>
+</br>
+
+### Model Validation 
+
+```{r}
+#Run the quadrat test
+quadrat.test(fit, nx = 4, ny = 4)
+
+```
+This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
+
+
+### PPP Residuals
+
+```{r}
+#Calculate the residuals
+res <- residuals(fit)
+
+#Visualise
+plot(res,
+     cols = "transparent",
+     main="Residuals Plots")
+
+```
+From the plot, it's observed that :
+
+- A clear pattern is detected : Majority of the residual plots are in the "high residuals region"
+- The residuals are small in magnitude (e^-8).  
+- The negative residual values suggest over-prediction.
+- there is room for improvement for the model
+
+
+##
+As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
+```{r}
+library(splines)
+
+#Fit the PPP model
+fit_smooth <- ppm(asc_data_ppp ~ bs(Elevation,7) + bs(Forest, 3), data = BC, use.gam = TRUE)
+
+fit_smooth
+
+```
+```{r}
+#Calculate the partial residuals as a function of elevation
+par_res_elev <- parres(fit_smooth, "Elevation")
+
+#Calculate the relative intensity as a function of gradient
+par_res_forest <- parres(fit_smooth, "Forest")
+
+#Side by side plotting
+par(mfrow = c(1,2))
+plot(par_res_elev,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Elevation")
+plot(par_res_forest,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Forest")
+
+```
+```{r}
+#AIC values
+AIC(fit); AIC(fit_smooth)
+
+#Delta AIC
+AIC(fit) - AIC(fit_smooth)
+
+#Likelihood ratio test
+anova(fit, fit_smooth, test = "LRT")
+```
+
+All these suggest that this complex models provides a better fit to the data.  Let's finally visualize the predictions as before.
+
+```{r}
+#Plot the model predictions
+plot(fit_smooth,
+     se = FALSE,
+     superimpose = FALSE,
+     main = "Estimated Fungi intensity")
+
+#Overlay the ocations
+plot(asc_data_ppp,
+     pch = 16,
+     cex = 0.6,
+     cols = "white",
+     add = TRUE)
+plot(asc_data_ppp,
+     pch = 16,
+     cex = 0.5,
+     cols = "black",
+     add = TRUE)
+
+```
+From this visualisation, the following is observed :
+
+- Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
+- Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
+
+# Results :
 
 # Discussion:   
 Provide a brief summary of your findings. Length: ca. 1 page.
