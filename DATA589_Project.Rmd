@@ -37,27 +37,26 @@ During this project, we hope to answer the following questions :
 - Can higher-degree polynomial model further improve the prediction model?
 
 ## 1.4 References
-https://www.britannica.com/science/fungus/Outline-of-classification-of-fungi
-https://en.wikipedia.org/wiki/Penicillium
-https://en.wikipedia.org/wiki/Ascomycota
+- https://www.britannica.com/science/fungus/Outline-of-classification-of-fungi
+- https://en.wikipedia.org/wiki/Penicillium
+- https://en.wikipedia.org/wiki/Ascomycota
 
+\newpage
 
-# 2. Methods and Results :   
+# 2. Methods and Results 
 
 ## 2.1 Dataset Variables and Selection
-A total of about 80,000 occurrences records are available, which are consolidated from a total of 109 datasets.  However, the following three major parties constitute about 85% of the total occurrences records :
+A total of about 69,000 occurrences records are available in BC, which are consolidated from a total of 109 datasets.  However, the following three major parties constitute about 85% of the total occurrences records :
 
 - UBC Herbarium - Licen Collection
 - iNaturalist Research-grade Observations
 - Assembly and activity of microbial communities in the Pacific temperate rainforest
 
-...describe the data cols, data cleaning, data selection....
-
 
 ```{r}
 # install.packages("rgbif")
 library(rgbif)
-?rgbif
+#?rgbif
 
 species <- c("Ascomycota")
 
@@ -80,11 +79,13 @@ asc_bc_data <- asc_bc_data$data #gbif_data to data.frame
 ## head(asc_bc_data) #contain "Ascomycota" data only in BC
 ```
 
+
+
 ### 2.1.1 Data Records
 
 Firstly, screen through some sample records of the dataset to see what information it contains and which attributes would and would not be useful and valuable in our analysis.
 
-```{r}
+```{r include=FALSE}
 asc_bc_data <- apply(asc_bc_data,2,as.character)
 
 # check the working directory and ensure that you have write access to that directory
@@ -97,17 +98,18 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 write.csv(asc_bc_data, "data/asc_bc_data.csv", row.names = FALSE)
 asc_bc_data <- read.csv("data/asc_bc_data.csv")
 
-head(asc_bc_data)
+# head(asc_bc_data)
 ```
 
-Broadly speaking, from the above records screening, the dataset information can be categorised into the following types according to the dataset attribuets :
+A total of 75 data colummns are available.  These columns can be broadly divided into the following three main categories :
+- Scientific Classification and Taxonomy Details : Scientific Name, Hierarchy of Biological classification and taxonomic ranks, etc
+- Point and Location Details : Continent, State/Province, Coordinates, Coordinates Uncertainty Meters, etc
+- Data Collection Details : Collector, Date and Timestamp
 
-- Species Taxonomy Information : There are many information about the species/family/genus/kingdom/class etc which correspond to the structural classification system of the fungi family.
-- Collected Record Information : Contains how observation is made (by human?), date, time and location (coordinate, continents, etc) it is collected, the sample collector/institution
 
 ### 2.1.2 Data Cleaning
 
-As the dataset contains too many information, including many detailed timestamps, key information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and perform attributes selection, in order to extract those potentially useful attributes and make our analysis more focused.  The cleaned list if shown below.
+As the dataset contains too many information, including many detailed timestamps, internal key/identifiers information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and performed attributes selection, in order to only retain those few potentially useful attributes, speeding up our subsequent analysis and making it more focused.  The cleaned list iis shown below.
 
 ```{r}
 
@@ -124,16 +126,12 @@ names(cleaned_asc_bc)
 ```
 
 
+### 2.1.3 Spatial Dataset Object Conversion and Preparation
 
-## 2.2 Statistical Packages
-what stat packages are used...
+As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible.
 
-## 2.3 Analytical Workflow 
-First EDA, then 1st moment analysis, then 2nd moment analysis steps 
+```{r include=FALSE}
 
-### 2.3.1 EDA : Initial Coordinates Plotting
-
-```{r}
 # convert cleaned_asc_bc to SpatialPointsDataFrame-class
 #reference: https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf
 #           https://scisus.org/2014/05/
@@ -169,16 +167,57 @@ cleaned_asc_bc$decimalLatitude <- tran_sp_asc_bc@coords[, 2]
 write.csv(cleaned_asc_bc, "data/clean_sp_asc_bc", row.names = FALSE)
 cleaned_asc_bc <- read.csv("data/clean_sp_asc_bc")
 
-#plot(decimalLatitude ~ decimalLongitude,
-#     pch = 16,
-#     col = "#046C9A",
-#     data = cleaned_asc_bc)
 ```
-
-```{r}
+ 
+```{r include=FALSE}
 library(spatstat)
 # install.packages("maptools")
 library(maptools)
+
+load("data/BC_Covariates.Rda")
+
+#observe windows
+BC<-DATA
+BC_win <- DATA$Window
+BC_win <- as.owin(DATA$Window)
+
+# convert into ppp object
+asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
+                     y = cleaned_asc_bc$decimalLatitude,
+                     window = BC_win)
+
+#length(asc_data_ppp)
+#anyDuplicated(asc_data_ppp)
+asc_data_ppp
+```
+
+
+```{r}
+plot(asc_data_ppp)
+```
+
+## 2.2 Statistical Packages
+The following packages are used to perform the analysis :
+- rgbif : allow searching and retrieving data from GBIF, access various dataset metadata, species names, and occurences details
+- sp, rgdal : process, manipulate and transform the data source longitude and latitude information
+- spstat : provides many statistical tests, analysis and plots
+- maptools : provides utilities to handle and analyze spatial objects
+- Others supporting libraries include kdensity and splines  
+
+\newpage
+
+## 2.3 Analytical Workflow 
+The report will start with some basic Exploratory Data Analysis and basic data plottings to have an initial understanding of the overall data points pattern.  
+
+We will then conduct First Moment Analysis which will include homogeneity analysis and covariates study on some variables.  Afterwards, we will perform Second Moment analysis where popular tools such as K-function and Pair Correlation Function will be deployed to investigate any clustering.  
+
+The report will then conduct model fitting and selection with both lower and higher polynomial variable terms and evaluate the fitness and its costs with AIC values.  The report is concluded by a final model validation process for the resulted model to assess the wellness of the model fitting.
+
+### 2.3.1 EDA : Initial Coordinates Plotting
+First, we have a coordinate plot to observe the general pattern in terms of the coordinates.
+
+```{r}
+
 #Visualise the data
 plot(decimalLatitude ~ decimalLongitude,
      pch = 16,
@@ -192,36 +231,8 @@ From the initial coordinate plot, we have identified the following very prelimin
 - Therefore is only a single major and significant large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering. 
 
 
-### 2.3.2 Spatial Dataset Conversion and Preparation
 
-As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible. 
-```{r}
-load("data/BC_Covariates.Rda")
-
-#observe windows
-BC<-DATA
-BC_win <- DATA$Window
-BC_win <- as.owin(DATA$Window)
-
-# convert into ppp object
-asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
-                     y = cleaned_asc_bc$decimalLatitude,
-                     window = BC_win)
-
-length(asc_data_ppp)
-
-```
-```{r}
-anyDuplicated(asc_data_ppp)
-asc_data_ppp
-```
-
-
-```{r}
-plot(asc_data_ppp)
-```
-
-### 2.3.3 EDA : BC Windows and Covariates Data Walkthough
+### 2.3.2 EDA : BC Windows and Covariates Data Walkthough
 
 Let's see what the BC_Covariates.Rda file provide us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
 
@@ -231,29 +242,18 @@ Let's see what the BC_Covariates.Rda file provide us which may help us to identi
 - Dist Water
 
 ```{r}
-plot(BC_win,
-      pch = 16,
-      cols = "red",
-      main = "BC windows data")
+#plot(BC_win, pch = 16, cols = "red", main = "BC windows data")
 ```
 
 ```{r}
+par(mfrow=c(2,2))
+
 #Elevation
 plot(BC$Elevation, main = "Elevation")
-```
-```{r}
 #Forest
 plot(BC$Forest, main = "Forest")
-```
-
-```{r}
 #Dist_Water
-plot(BC$Dist_Water, main = "Dist_Water")
-```
-
-
-```{r}
-plot(BC$Elevation, main = "elevation data")
+plot(BC$Dist_Water, main = "Distance to Water")
 plot(asc_data_ppp, 
      which.marks = "species", # Which mark to use
      col = "grey", #The colour of the window
@@ -263,43 +263,52 @@ plot(asc_data_ppp,
      main = "Ascomycota in BC", # The title
      par(bg="grey40", cex.main = 2),
      cex = 0.6,
-     legend = T) # Turn of the legend depending on needs`
-```
-
-
-```{r}
-col_pal <- rev(rainbow(100,end = 4/6))
-
-fig <- persp(BC$Elevation, # source data
-              theta = 10,
-              phi = 40, # rotation
-              expand = 0, # z-axis expansion
-              border = NA, #remove grid borders
-              apron = FALSE, #apron around edge
-              shade = 0.3, # shading
-              box = FALSE, # axes on/off
-              main = "BC Parks Elevation", # title
-              visible = TRUE, #Supporting calculations
-              colmap = col_pal) # colour pallet
-
-perspPoints(asc_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
+     legend = T) # Turn off the legend depending on needs
 
 ```
 
+
+
+```{r eval=FALSE, include=FALSE}
+# col_pal <- rev(rainbow(100,end = 4/6))
+
+#fig <- persp(BC$Elevation, # source data
+#              theta = 10,
+#              phi = 40, # rotation
+#              expand = 0, # z-axis expansion
+#              border = NA, #remove grid borders
+#              apron = FALSE, #apron around edge
+#              shade = 0.3, # shading
+#              box = FALSE, # axes on/off
+#              main = "BC Parks Elevation", # title
+#              visible = TRUE, #Supporting calculations
+#             colmap = col_pal) # colour pallet
+
+# perspPoints(asc_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
+```
+
+
+Next, We try to pick Elevation to divide its values into 5 levels, and see if there are any patterns for the distribution of the fungi points in the different elevation level.
+```{r eval=FALSE, include=FALSE}
+#plot(cut(BC$Elevation,5,
+#labels = c("low","low-medium","medium","medium-high","high")),
+#par(bg="grey40", cex.main = 2),
+#main = "Elevation classes")
+
+#points(asc_data_ppp, pch = 16, cex = 0.35, col="green")
+```
 ```{r}
-plot(cut(BC$Elevation,5,
-labels = c("low","low-medium","medium","medium-high","high")),
-par(bg="grey40", cex.main = 2),
-main = "Elevation classes")
-
-points(asc_data_ppp, pch = 16, cex = 0.35, col="green")
-
 cut <- cut(BC$Elevation,5,
 labels = c("low","low-medium","medium","medium-high","high"))
 table(cut[asc_data_ppp]) #most in low elevation
 
 ```
-### 2.3.4 KDE Analysis
+
+Finding :
+- Overwhelming majority of the fungi points are found in the low elevation region
+
+
+### 2.3.3 KDE Analysis
 
 ```{r}
 # nn_dist <- nndist(asc_data_ppp)
@@ -324,15 +333,17 @@ legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "re
 ```
 
 
-### 2.3.5 First Moment Descriptive Statistics
+### 2.3.4 First Moment Descriptive Statistics
+After preliminary EDA and high level plot, we will study various first moment descriptive statistical measures.
+
 
 #### 2.3.5.a Intensity
+
 ```{r}
 intensity(asc_data_ppp)
 ```
 
 #### 2.3.5.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
-
 Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
 
 
@@ -368,15 +379,20 @@ plot(asc_data_ppp,
      cols = "black",
      add = T)
 ```
+
+Next, we perform a Qudart test of homogeneity
 ```{r}
 #Quadrat test of homogeneity 
 quadrat.test(Q)
 ```
+
+In addition, We also perform a Likelihood Ratio Test to evaluate the degree of homogeneity as cross reference.
 ```{r}
 R <- bw.ppl(asc_data_ppp)
 LR <- scanLRTS(asc_data_ppp,r=R)
-plot(LR,"Likelihood Ratio Test")
-plot(asc_data_ppp$window,add=T)
+
+#plot(LR,"Likelihood Ratio Test")
+#plot(asc_data_ppp$window,"Likelihood Ratio Test")
 
 pvals <- eval.im(pchisq(LR,
                         df = 1,
@@ -388,16 +404,18 @@ plot(pvals, main = "Local p-values")
 plot(asc_data_ppp$window,add=T)
 ```
 
+Once again, these plots have strongly verified the spatial inhomogeneity nature of the fungi distribution :
 
-Once again, this has strongly verified the spatial inhomogeneity nature of the fungi distribution :
-
-- About 90% of the regions have zero point.
-- Less than 5% of the regions contain more than 85% of all the points
-- Quadrat Test also indicates a significant deviation from homogeneity.
-- Hot spot analysis shows only a single prominent hot spot
+- Overwhelming majority of the regions have zero or near zero points.
+- Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
+- Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions are purely yelliw (i.e. p=1).
 
 ### 2.3.6 Covariate Study
+Now, we will study the covariate behaviour individually, and see whether there are strong support or observable patterns.  We will conduct quantile split into 4 sections for each of the covariates.
+
+
 #### 2.3.6.a Covariate Variable : Elevation
+Let's start with Elevation.
 
 ```{r}
 elev <- BC$Elevation
@@ -413,6 +431,7 @@ plot(rho)
 
 
 #### 2.3.6.b Covariate Variable : Forest
+Then, let's see Forest.
 
 ```{r}
 forest <- BC$Forest
@@ -421,6 +440,7 @@ Zcut <- cut(forest,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
+
 ```{r echo=FALSE}
 rho <- rhohat(asc_data_ppp,forest)
 plot(rho)
@@ -429,6 +449,7 @@ plot(rho)
 
 
 #### 2.3.6.c Covariate Variable : Distance to Water
+Followed by Distance to Water.
 
 ```{r}
 dist <- BC$Dist_Water
@@ -437,8 +458,13 @@ Zcut <- cut(dist,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
+```{r echo=FALSE}
+rho <- rhohat(asc_data_ppp,dist)
+plot(rho)
+```
 
-#### 2.3.6.d Covariate Variable Observation
+
+#### 2.3.6.d Section Conclusion
 
 Observation : 
 
@@ -451,8 +477,10 @@ Observation :
 
 
 ### 2.3.7 Second Moment Descriptives
+To continue the analysis, we will explore the second moment descriptives to uncover any variances and correlation characteristics of the data. 
 
 #### 2.3.7.a Ripley's K-function
+We firstly use the typical K-function to measure the spatial clustering and point pattern.
 
 ```{r}
 # Bootstrapped CIs
@@ -474,7 +502,7 @@ plot(E_asc,
 
 ```
 
-Now, we are going to correct for inhomogeneity... 
+As inhomogeneity has been observed, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
 ```{r}
 lambda_asc <- density(asc_data_ppp, bw.ppl)
 Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
@@ -502,9 +530,14 @@ plot(E_asc_inhom,
 
 ```
 
-For homogeneous case, the observed data show a strong clustering at small r value range.  When corrected for inhomogeneity, such clustering pattern is no longer observed.
+Finding :
+
+- When assumed homogeneity, the observed data show a strong clustering at small r value range.
+- When corrected for inhomogeneity, such clustering pattern is no longer observed.
+
 
 #### 2.3.7.b Pair Correlation Function
+We are also interested in checking the points relation using pair correlation function.
 ```{r}
 # Estimate the g function
 pcf_asc <- pcf(asc_data_ppp)
@@ -512,7 +545,7 @@ pcf_asc <- pcf(asc_data_ppp)
 pcf_asc
 plot(pcf_asc,xlim=c(0,120000),main="Pair Correlation Function")
 ```
-The above estimator also assumes homogeneity.  Let's relax this assumption.
+The above estimator also assumes homogeneity.  Let's relax this assumption to produce a more accurate analysis.
 
 ```{r}
 #Simulation envelope (with points drawn from the estimated intensity)
@@ -529,44 +562,54 @@ plot(pcf_asc_inhom,
      lwd = 2)
 
 ```
-When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
+
+Finding :
+
+- When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
 
 
 ### 2.3.8 Model Fitting and Selection with AIC
+In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.
+
 ```{r}
 fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
 fit
 ```
 
-Elevation and Forest are significant but Dist_Water isn't.  OK, then try higher order.
+Elevation and Forest are significant but Distance to Water isn't.  OK, then try one higher order.
 
 ```{r}
 fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2), data = BC)
 fit
 ```
-OK, after trying several rounds, the following seems to be a improved fit :
+
+Similarly, after several rounds of tuning (the details are not shown here due to repetitive and routine nature), the following seems to be a improved fit :
 ```{r}
 fit_simple <- ppm(asc_data_ppp ~ Elevation + Forest, data = BC)
 fit_simple
 fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Forest + I(Forest^2), data = BC)
 fit
 ```
-Now, let's see if the complicated model is worth it.
+
+Now, the model gets more complicated.  We will evaluate if the additional cost overhead of adopting such a more complicated model is well justified by benchmarking with the AIC values.
+
 ```{r}
 #AIC values
 AIC(fit); AIC(fit_simple)
 #Delta AIC
 AIC(fit_simple) - AIC(fit)
 ```
-Also, conduct a anova LRT test to compare the two models :
+
+We will also like to conduct a anova LRT test as an additional objective measurement to compare the two models :
 ```{r}
 anova(fit_simple, fit, test = "LRT")
 ```
 
 The following conclusion is drawn :
+
 - The model with quadratic terms provides a better fit to the data
 - With the delta AIC of 44, the extra complexity is well supported.
-- So, a good model should be 
+- So, a possible model should be 
 
 </br>
 <center>
@@ -574,9 +617,20 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 </center>
 </br>
 
+
 ### 2.3.9 Model Validation 
+Now, given the following fitted model, we will finally evaluate the over model performance again with Quadrat Test and PPP Residuals.
+
+</br>
+<center>
+$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0.000003~\mathrm{elevation}(u)^2~-~0.042~\mathrm{forest}(u)~+~0.00018~\mathrm{forest}(u)^2}$ 
+</center>
+</br>
+
+
 
 #### 2.3.9.a Quadrat Test
+Let's see the quadrat test result of the higher degree polynomial model.
 ```{r}
 #Run the quadrat test
 quadrat.test(fit, nx = 4, ny = 4)
@@ -586,27 +640,27 @@ This has small p value, suggesting significant deviation from our model's predic
 
 
 #### 2.3.9.b PPP Residuals
-
+We will also check the distribution of residuals value of the model. 
 ```{r}
 #Calculate the residuals
 res <- residuals(fit)
 
 #Visualise
 plot(res,
-     cols = "transparent",
+#     cols = "transparent",
      main="Residuals Plots")
 
 ```
 From the plot, it's observed that :
 
-- A clear pattern is detected : Majority of the residual plots are in the "high residuals region"
 - The residuals are small in magnitude (e^-8).  
-- The negative residual values suggest over-prediction.
-- there is room for improvement for the model
+- The negative residual values suggest over-prediction of the model.
+- There is room for improvement for the model
 
 
 ### 2.3.10 Higher Order Polynomial Fitting with Spline and Validation
 As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
+
 ```{r}
 library(splines)
 
@@ -637,6 +691,8 @@ plot(par_res_forest,
      xlab = "Forest")
 
 ```
+
+Now, compare the AIC values for both the simpler and higher polynomial degree models.
 ```{r}
 #AIC values
 AIC(fit); AIC(fit_smooth)
@@ -675,9 +731,12 @@ From this visualisation, the following is observed :
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
 - Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
 
+\newpage
 
 # 3. Discussion:   
 Provide a brief summary of your findings. Length: ca. 1 page.
+
+\newpage
 
 # 4. References:   
 Include references to all necessary literature.
