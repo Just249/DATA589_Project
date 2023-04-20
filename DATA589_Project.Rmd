@@ -6,19 +6,53 @@ output:
   pdf_document: default
   html_document: default
 ---
-# Dataset   
-URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
-Species: Ascomycota
-
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
-# Introduction:   
-Provide a brief description of the study system from which the data come and an outline of what questions you intend on exploring with the data, citing any relevant literature. Length: ca. 1 page.
+# 1. Introduction
 
-# Methods:   
-Briefly describe the data and what variables are included. Provide a detailed description of the analytical workflow that was applied to the data, citing any relevant literature and statistical packages employed. There should be enough information that anyone can reproduce the workflow if they had access to the data. Length: As long as necessary.
+## 1.1 Ascomycota as a phylum of the kingdom Fungi
+Ascomycota is a phylum (or category) of the kingdom Fungi.  In fact, it is the largest phylum of Fungi.   Its members are also commonly known as sac fungi. 
+
+Among many other Fungi phylum, Ascomycota is of particularly useful to humans.  As it can be used as sources of medicinally important compounds (e.g. antibiotics), and fermentation for various food products such as alcoholic beverages, bread and cheese.  One famous example of its members is Penicillium, which has been widely used and utilized in natural environment, in food spoilage, and food and drug production.
+
+The Ascomycota also plays an important role in most land-based ecosystems, because they are efficient decomposers, breaking down organic materials (e.g. dead leaves and animals) and completing the nutrient cycle.
+
+
+## 1.2 Data Source
+Data is downloaded from GBIF with the download link below :
+URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
+
+## 1.3 Research Questions
+Due to the potential medically and various practical values of Ascomycota, we would be interested in exploring and investigating its growth distribution, patterns and population density in terms of spatial analysis.  
+
+During this project, we hope to answer the following questions :
+
+- Are there any spatial patterns?
+- Is the distribution homogeneous and inhomogeneous?
+- Are there any significant correlation with the available covariate data such as Elevation, Forest, and Distance to Water?
+- Are there evidence to support any occurrence clustering, independence or avoidance?  Are these affected by the homogeneity and inhomogeneity assumption of the data?
+- What are the possible prediction models? Does complicated model outperform simple model?  Is the complicated model worth it?
+- Can higher-degree polynomial model further improve the prediction model?
+
+## 1.4 References
+https://www.britannica.com/science/fungus/Outline-of-classification-of-fungi
+https://en.wikipedia.org/wiki/Penicillium
+https://en.wikipedia.org/wiki/Ascomycota
+
+
+# 2. Methods and Results :   
+
+## 2.1 Dataset Variables and Selection
+A total of about 80,000 occurrences records are available, which are consolidated from a total of 109 datasets.  However, the following three major parties constitute about 85% of the total occurrences records :
+
+- UBC Herbarium - Licen Collection
+- iNaturalist Research-grade Observations
+- Assembly and activity of microbial communities in the Pacific temperate rainforest
+
+...describe the data cols, data cleaning, data selection....
+
 
 ```{r}
 # install.packages("rgbif")
@@ -41,13 +75,12 @@ asc_bc_data <- occ_data(scientificName = species,
                            country = "CA",
                            stateProvince = "British Columbia") #* 102 illegal points stored in attr(,“rejects”) ***
 
-class(asc_bc_data) #gbif_data 
+# class(asc_bc_data) #gbif_data 
 asc_bc_data <- asc_bc_data$data #gbif_data to data.frame
-head(asc_bc_data) #contain "Ascomycota" data only in BC
-
+## head(asc_bc_data) #contain "Ascomycota" data only in BC
 ```
 
-## Data Records
+### 2.1.1 Data Records
 
 Firstly, screen through some sample records of the dataset to see what information it contains and which attributes would and would not be useful and valuable in our analysis.
 
@@ -72,7 +105,7 @@ Broadly speaking, from the above records screening, the dataset information can 
 - Species Taxonomy Information : There are many information about the species/family/genus/kingdom/class etc which correspond to the structural classification system of the fungi family.
 - Collected Record Information : Contains how observation is made (by human?), date, time and location (coordinate, continents, etc) it is collected, the sample collector/institution
 
-## Data Cleaning
+### 2.1.2 Data Cleaning
 
 As the dataset contains too many information, including many detailed timestamps, key information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and perform attributes selection, in order to extract those potentially useful attributes and make our analysis more focused.  The cleaned list if shown below.
 
@@ -90,7 +123,15 @@ names(cleaned_asc_bc)
 
 ```
 
-## Initial Coordinates Plotting
+
+
+## 2.2 Statistical Packages
+what stat packages are used...
+
+## 2.3 Analytical Workflow 
+First EDA, then 1st moment analysis, then 2nd moment analysis steps 
+
+### 2.3.1 EDA : Initial Coordinates Plotting
 
 ```{r}
 # convert cleaned_asc_bc to SpatialPointsDataFrame-class
@@ -150,7 +191,37 @@ From the initial coordinate plot, we have identified the following very prelimin
 - Points clustering is highly likely as a large group of data points is spotted at the decimal Longitude between 1000K and 1300K and Latitude between 4e+5 and 5e+5.
 - Therefore is only a single major and significant large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering. 
 
-## BC Windows Data Walkthough
+
+### 2.3.2 Spatial Dataset Conversion and Preparation
+
+As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible. 
+```{r}
+load("data/BC_Covariates.Rda")
+
+#observe windows
+BC<-DATA
+BC_win <- DATA$Window
+BC_win <- as.owin(DATA$Window)
+
+# convert into ppp object
+asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
+                     y = cleaned_asc_bc$decimalLatitude,
+                     window = BC_win)
+
+length(asc_data_ppp)
+
+```
+```{r}
+anyDuplicated(asc_data_ppp)
+asc_data_ppp
+```
+
+
+```{r}
+plot(asc_data_ppp)
+```
+
+### 2.3.3 EDA : BC Windows and Covariates Data Walkthough
 
 Let's see what the BC_Covariates.Rda file provide us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
 
@@ -160,12 +231,6 @@ Let's see what the BC_Covariates.Rda file provide us which may help us to identi
 - Dist Water
 
 ```{r}
-load("data/BC_Covariates.Rda")
-
-#observe windows
-BC<-DATA
-BC_win <- DATA$Window
-BC_win <- as.owin(DATA$Window)
 plot(BC_win,
       pch = 16,
       cols = "red",
@@ -186,43 +251,7 @@ plot(BC$Forest, main = "Forest")
 plot(BC$Dist_Water, main = "Dist_Water")
 ```
 
-## Spatial Dataset Conversion and Preparation
 
-As the current format of the fungi data is not in a PPP class object, to facilitate subsequent analysis and plots, we would firstly convert it to the PPP, which would make subsequent plotting and analysis library much more accessible. 
-```{r}
-# names(cleaned_asc_bc$decimalLongitude)
-# class(cleaned_asc_bc$decimalLongitude)
-
-
-# convert into ppp object
-asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
-                     y = cleaned_asc_bc$decimalLatitude,
-                     window = BC_win)
-
-length(asc_data_ppp)
-
-```
-```{r}
-anyDuplicated(asc_data_ppp)
-asc_data_ppp
-```
-
-
-```{r}
-# length(cleaned_asc_bc$decimalLongitude)
-# length(cleaned_asc_bc$decimalLatitude)
-# length(cleaned_asc_bc$species)
-# length(marks(asc_data_ppp))
-# 
-# marks(asc_data_ppp) <- factor(cleaned_asc_bc$species)
-# length(cleaned_asc_bc$species)
-
-
-plot(asc_data_ppp)
-# 
-# marks(asc_data_ppp) <- BC[[1]]$Region
-
-```
 ```{r}
 plot(BC$Elevation, main = "elevation data")
 plot(asc_data_ppp, 
@@ -256,6 +285,7 @@ fig <- persp(BC$Elevation, # source data
 perspPoints(asc_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
 
 ```
+
 ```{r}
 plot(cut(BC$Elevation,5,
 labels = c("low","low-medium","medium","medium-high","high")),
@@ -269,6 +299,8 @@ labels = c("low","low-medium","medium","medium-high","high"))
 table(cut[asc_data_ppp]) #most in low elevation
 
 ```
+### 2.3.4 KDE Analysis
+
 ```{r}
 # nn_dist <- nndist(asc_data_ppp)
 # marks(asc_data_ppp) <- nn_dist
@@ -292,12 +324,14 @@ legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "re
 ```
 
 
-## First Moment Descriptive Statistics
+### 2.3.5 First Moment Descriptive Statistics
+
+#### 2.3.5.a Intensity
 ```{r}
 intensity(asc_data_ppp)
 ```
 
-### Homogeneity Studies, Quadrat Test and Hotspot Analysis
+#### 2.3.5.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
 
 Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
 
@@ -362,8 +396,8 @@ Once again, this has strongly verified the spatial inhomogeneity nature of the f
 - Quadrat Test also indicates a significant deviation from homogeneity.
 - Hot spot analysis shows only a single prominent hot spot
 
-## Covariate Study
-### Covariate Variable : Elevation
+### 2.3.6 Covariate Study
+#### 2.3.6.a Covariate Variable : Elevation
 
 ```{r}
 elev <- BC$Elevation
@@ -378,7 +412,7 @@ plot(rho)
 ```
 
 
-### Covariate Variable : Forest
+#### 2.3.6.b Covariate Variable : Forest
 
 ```{r}
 forest <- BC$Forest
@@ -394,7 +428,7 @@ plot(rho)
 
 
 
-### Covariate Variable : Distance to Water
+#### 2.3.6.c Covariate Variable : Distance to Water
 
 ```{r}
 dist <- BC$Dist_Water
@@ -404,7 +438,7 @@ V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
 
-### Covariate Variable Observation
+#### 2.3.6.d Covariate Variable Observation
 
 Observation : 
 
@@ -416,9 +450,9 @@ Observation :
   - The proportion of occurrence that appears in the respective smallest sectors account for about 50% of the identified points.
 
 
-## Second Moment Descriptives
+### 2.3.7 Second Moment Descriptives
 
-### Ripley's K-function
+#### 2.3.7.a Ripley's K-function
 
 ```{r}
 # Bootstrapped CIs
@@ -470,7 +504,7 @@ plot(E_asc_inhom,
 
 For homogeneous case, the observed data show a strong clustering at small r value range.  When corrected for inhomogeneity, such clustering pattern is no longer observed.
 
-### Pair Correlation Function
+#### 2.3.7.b Pair Correlation Function
 ```{r}
 # Estimate the g function
 pcf_asc <- pcf(asc_data_ppp)
@@ -498,7 +532,7 @@ plot(pcf_asc_inhom,
 When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
 
 
-### Model Fitting and Selection with AIC
+### 2.3.8 Model Fitting and Selection with AIC
 ```{r}
 fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
 fit
@@ -540,8 +574,9 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 </center>
 </br>
 
-### Model Validation 
+### 2.3.9 Model Validation 
 
+#### 2.3.9.a Quadrat Test
 ```{r}
 #Run the quadrat test
 quadrat.test(fit, nx = 4, ny = 4)
@@ -550,7 +585,7 @@ quadrat.test(fit, nx = 4, ny = 4)
 This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 
 
-### PPP Residuals
+#### 2.3.9.b PPP Residuals
 
 ```{r}
 #Calculate the residuals
@@ -570,7 +605,7 @@ From the plot, it's observed that :
 - there is room for improvement for the model
 
 
-## Higher Order Polynomial Fitting with Spline and Validation
+### 2.3.10 Higher Order Polynomial Fitting with Spline and Validation
 As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
 ```{r}
 library(splines)
@@ -640,15 +675,10 @@ From this visualisation, the following is observed :
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
 - Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
 
-# Results :
 
-# Discussion:   
+# 3. Discussion:   
 Provide a brief summary of your findings. Length: ca. 1 page.
-```{r}
-```
-# References:   
+
+# 4. References:   
 Include references to all necessary literature.
-```{r}
-```
-```{r}
-```
+
