@@ -102,6 +102,7 @@ asc_bc_data <- read.csv("data/asc_bc_data.csv")
 ```
 
 A total of 75 data colummns are available.  These columns can be broadly divided into the following three main categories :
+
 - Scientific Classification and Taxonomy Details : Scientific Name, Hierarchy of Biological classification and taxonomic ranks, etc
 - Point and Location Details : Continent, State/Province, Coordinates, Coordinates Uncertainty Meters, etc
 - Data Collection Details : Collector, Date and Timestamp
@@ -109,7 +110,7 @@ A total of 75 data colummns are available.  These columns can be broadly divided
 
 ### 2.1.2 Data Cleaning
 
-As the dataset contains too many information, including many detailed timestamps, internal key/identifiers information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and performed attributes selection, in order to only retain those few potentially useful attributes, speeding up our subsequent analysis and making it more focused.  The cleaned list iis shown below.
+As the dataset contains too much information, including many detailed timestamps, internal key/identifiers information and dataset/records identifiers which should not be valuable in our analysis and complicate our subsequent analysis, we have performed preliminary cleaning procedure and performed attributes selection, in order to only retain those few potentially useful attributes, speeding up our subsequent analysis and making it more focused.  The cleaned list is shown below.
 
 ```{r}
 
@@ -198,6 +199,7 @@ plot(asc_data_ppp)
 
 ## 2.2 Statistical Packages
 The following packages are used to perform the analysis :
+
 - rgbif : allow searching and retrieving data from GBIF, access various dataset metadata, species names, and occurences details
 - sp, rgdal : process, manipulate and transform the data source longitude and latitude information
 - spstat : provides many statistical tests, analysis and plots
@@ -305,16 +307,17 @@ table(cut[asc_data_ppp]) #most in low elevation
 ```
 
 Finding :
+
 - Overwhelming majority of the fungi points are found in the low elevation region
 
 
-### 2.3.3 KDE Analysis
+### 2.3.3 KDE Analysis (?? should this part be skipped, don't know its interpretation/purpose??)
 
 ```{r}
 # nn_dist <- nndist(asc_data_ppp)
 # marks(asc_data_ppp) <- nn_dist
 # plot(asc_data_ppp, main = "Ascomycota Distance",which.marks = "Dist", pch = 16)
-BC$Elevation[asc_data_ppp]
+# BC$Elevation[asc_data_ppp]
 
 library("kdensity")
 asc_density <- density(BC$Elevation[asc_data_ppp])
@@ -344,7 +347,8 @@ intensity(asc_data_ppp)
 ```
 
 #### 2.3.5.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
-Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
+
+Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are sparesely located in the BC.  Let's verify this with the Quadrat Count Plot.
 
 
 ```{r}
@@ -407,14 +411,15 @@ plot(asc_data_ppp$window,add=T)
 Once again, these plots have strongly verified the spatial inhomogeneity nature of the fungi distribution :
 
 - Overwhelming majority of the regions have zero or near zero points.
-- Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
-- Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions are purely yelliw (i.e. p=1).
+- Quadrat Test and Likelihood Ratio Test indicates portions of certain significant deviation from homogeneity.  
+- Hot spot analysis shows only a very few prominent hot spots/areas with low p-values.  Most regions (in yellow, p to close 1) show no deviation from Poisson distribution. These deviations are mainly concentrated in the southern part of the province.
 
 ### 2.3.6 Covariate Study
 Now, we will study the covariate behaviour individually, and see whether there are strong support or observable patterns.  We will conduct quantile split into 4 sections for each of the covariates.
 
 
 #### 2.3.6.a Covariate Variable : Elevation
+
 Let's start with Elevation.
 
 ```{r}
@@ -424,16 +429,17 @@ Zcut <- cut(elev,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
-```{r echo=FALSE}
+```{r echo=FALSE,cache=TRUE}
 rho <- rhohat(asc_data_ppp,elev)
-plot(rho)
+plot(rho,xlim=c(-200,1000))
 ```
 
 
 #### 2.3.6.b Covariate Variable : Forest
-Then, let's see Forest.
 
-```{r}
+Then, let's the check Forest as covariate.
+
+```{r cache=TRUE}
 forest <- BC$Forest
 b <- quantile(forest,probs=(0:4)/4,type=2)
 Zcut <- cut(forest,breaks=b)
@@ -441,7 +447,7 @@ V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, cache=TRUE}
 rho <- rhohat(asc_data_ppp,forest)
 plot(rho)
 ```
@@ -449,7 +455,8 @@ plot(rho)
 
 
 #### 2.3.6.c Covariate Variable : Distance to Water
-Followed by Distance to Water.
+
+Then, we look into "Distance to Water".
 
 ```{r}
 dist <- BC$Dist_Water
@@ -458,18 +465,18 @@ Zcut <- cut(dist,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
-```{r echo=FALSE}
+```{r echo=FALSE, cache=TRUE}
 rho <- rhohat(asc_data_ppp,dist)
 plot(rho)
 ```
 
 
-#### 2.3.6.d Section Conclusion
+#### 2.3.6.d Covariates Section Conclusion
 
-Observation : 
+The observation is made from the above plots : 
 
 - For Elevation Level :
-  - It is obvious that the fungi is overwhelmingly correlated to the low elevation level.  
+  - It is obvious that the fungi is overwhelmingly clustered in the low elevation level region.  
   - The proportion of occurrence that appears in the lowest elevation sector accounts for more than 97% of the identified points.
 - For Forest and Distance to Water :
   - It is observed that the fungi is correlated to both Forest and distance .  
@@ -479,7 +486,8 @@ Observation :
 ### 2.3.7 Second Moment Descriptives
 To continue the analysis, we will explore the second moment descriptives to uncover any variances and correlation characteristics of the data. 
 
-#### 2.3.7.a Ripley's K-function
+#### 2.3.7.a Ripley's K-function  ??? why K goes down???
+
 We firstly use the typical K-function to measure the spatial clustering and point pattern.
 
 ```{r}
@@ -503,7 +511,7 @@ plot(E_asc,
 ```
 
 As inhomogeneity has been observed, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
-```{r}
+```{r cache=TRUE}
 lambda_asc <- density(asc_data_ppp, bw.ppl)
 Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
 
@@ -537,13 +545,14 @@ Finding :
 
 
 #### 2.3.7.b Pair Correlation Function
+
 We are also interested in checking the points relation using pair correlation function.
 ```{r}
 # Estimate the g function
 pcf_asc <- pcf(asc_data_ppp)
 
 pcf_asc
-plot(pcf_asc,xlim=c(0,120000),main="Pair Correlation Function")
+plot(pcf_asc,xlim=c(0,50000),main="Pair Correlation Function")
 ```
 The above estimator also assumes homogeneity.  Let's relax this assumption to produce a more accurate analysis.
 
@@ -569,7 +578,7 @@ Finding :
 
 
 ### 2.3.8 Model Fitting and Selection with AIC
-In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.
+In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  To do this, we will try to fit model with different polynomial degree terms and then assess for the performance gains versus the cost of the extra complexity.
 
 ```{r}
 fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
@@ -608,7 +617,7 @@ anova(fit_simple, fit, test = "LRT")
 The following conclusion is drawn :
 
 - The model with quadratic terms provides a better fit to the data
-- With the delta AIC of 44, the extra complexity is well supported.
+- A delta AIC value of 44 indicates a significant fitting improvement, the extra complexity is therefore well justified.
 - So, a possible model should be 
 
 </br>
@@ -619,7 +628,8 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 
 
 ### 2.3.9 Model Validation 
-Now, given the following fitted model, we will finally evaluate the over model performance again with Quadrat Test and PPP Residuals.
+
+Now, given the following fitted model, we will finally evaluate the overall model performance again with Quadrat Test and PPP Residuals.
 
 </br>
 <center>
@@ -630,6 +640,7 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 
 
 #### 2.3.9.a Quadrat Test
+
 Let's see the quadrat test result of the higher degree polynomial model.
 ```{r}
 #Run the quadrat test
@@ -640,6 +651,7 @@ This has small p value, suggesting significant deviation from our model's predic
 
 
 #### 2.3.9.b PPP Residuals
+
 We will also check the distribution of residuals value of the model. 
 ```{r}
 #Calculate the residuals
@@ -659,6 +671,7 @@ From the plot, it's observed that :
 
 
 ### 2.3.10 Higher Order Polynomial Fitting with Spline and Validation
+
 As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
 
 ```{r}
