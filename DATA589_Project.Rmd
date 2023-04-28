@@ -58,7 +58,7 @@ A total of about 69,000 occurrences records are available in BC, which are conso
 library(rgbif)
 #?rgbif
 
-species <- c("Ascomycota")
+species <- c("Basidiomycota")
 
 # Get number of occurrence records from rgbif
 #occ_count(scientificName = species) #16069587 in the dataset
@@ -69,36 +69,39 @@ asc_count <- occ_count(scientificName = species,
                           country = "CA",
                           stateProvince = "British Columbia")
 
-asc_bc_data <- occ_data(scientificName = species,
+bas_bc_data <- occ_data(scientificName = species,
                            hasCoordinate = TRUE,
                            country = "CA",
-                           stateProvince = "British Columbia") #* 102 illegal points stored in attr(,“rejects”) ***
+                           stateProvince = "British Columbia",
+                           limit = 2000) #* 102 illegal points stored in attr(,“rejects”) ***
 
-# class(asc_bc_data) #gbif_data 
-asc_bc_data <- asc_bc_data$data #gbif_data to data.frame
-## head(asc_bc_data) #contain "Ascomycota" data only in BC
+# class(bas_bc_data) #gbif_data 
+bas_bc_data <- bas_bc_data$data #gbif_data to data.frame
+## head(bas_bc_data) #contain "Ascomycota" data only in BC
 ```
 
 
-
+```{r}
+bas_bc_data
+```
 ### 2.1.1 Data Records
 
 Firstly, screen through some sample records of the dataset to see what information it contains and which attributes would and would not be useful and valuable in our analysis.
 
 ```{r include=FALSE}
-asc_bc_data <- apply(asc_bc_data,2,as.character)
+bas_bc_data <- apply(bas_bc_data,2,as.character)
 
 # check the working directory and ensure that you have write access to that directory
 getwd()
 #add write acces
 # setwd("C:/Users/chanp/Desktop/MDS/Class/Block6/DATA589/Project")
-
+# install.packages("rstudioapi")
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # save the data as CSV
-write.csv(asc_bc_data, "data/asc_bc_data.csv", row.names = FALSE)
-asc_bc_data <- read.csv("data/asc_bc_data.csv")
+write.csv(bas_bc_data, "data/bas_bc_data.csv", row.names = FALSE)
+bas_bc_data <- read.csv("data/bas_bc_data.csv")
 
-# head(asc_bc_data)
+# head(bas_bc_data)
 ```
 
 A total of 75 data colummns are available.  These columns can be broadly divided into the following three main categories :
@@ -114,14 +117,14 @@ As the dataset contains too much information, including many detailed timestamps
 
 ```{r}
 
-# View(data.frame(names(asc_bc_data)))
-cleaned_asc_bc <- asc_bc_data[ , c("decimalLongitude", "decimalLatitude", "order", "family", "genus", "species", "genericName", "specificEpithet", "coordinateUncertaintyInMeters", "stateProvince", 
+# View(data.frame(names(bas_bc_data)))
+cleaned_bas_bc <- bas_bc_data[ , c("decimalLongitude", "decimalLatitude", "order", "family", "genus", "species", "genericName", "specificEpithet", "coordinateUncertaintyInMeters", "stateProvince", 
                                   "year", "month", "day", "eventDate", "occurrenceStatus", "class", "countryCode","country", "verbatimLocality", "taxonID", "catalogNumber", "institutionCode", "eventTime",
                                   "verbatimEventDate", "collectionCode", "gbifID", "verbatimLocality"
                                   )]
 ```
 ```{r}
-names(cleaned_asc_bc)
+names(cleaned_bas_bc)
 
 
 ```
@@ -133,40 +136,40 @@ As the current format of the fungi data is not in a PPP class object, to facilit
 
 ```{r include=FALSE}
 
-# convert cleaned_asc_bc to SpatialPointsDataFrame-class
+# convert cleaned_bas_bc to SpatialPointsDataFrame-class
 #reference: https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf
 #           https://scisus.org/2014/05/
 
-names(cleaned_asc_bc)
-sort(unique(cleaned_asc_bc$individualCount))  # notice if some points correspond to zero abundance
-sort(unique(cleaned_asc_bc$occurrenceStatus))  # check for different indications of "absent", which could be in different languages
-absence_rows <- which(cleaned_asc_bc$individualCount == 0 | cleaned_asc_bc$occurrenceStatus %in% c("absent", "Absent", "ABSENT", "ausente", "Ausente", "AUSENTE"))
+names(cleaned_bas_bc)
+sort(unique(cleaned_bas_bc$individualCount))  # notice if some points correspond to zero abundance
+sort(unique(cleaned_bas_bc$occurrenceStatus))  # check for different indications of "absent", which could be in different languages
+absence_rows <- which(cleaned_bas_bc$individualCount == 0 | cleaned_bas_bc$occurrenceStatus %in% c("absent", "Absent", "ABSENT", "ausente", "Ausente", "AUSENTE"))
 length(absence_rows)
 if (length(absence_rows) > 0) {
-  cleaned_asc_bc <- cleaned_asc_bc[-absence_rows, ]
+  cleaned_bas_bc <- cleaned_bas_bc[-absence_rows, ]
 }
 
 library(sp)
-sp_asc_bc <- SpatialPointsDataFrame(coords = cleaned_asc_bc[, c("decimalLongitude", "decimalLatitude")],
-                                         data = cleaned_asc_bc)
+sp_bas_bc <- SpatialPointsDataFrame(coords = cleaned_bas_bc[, c("decimalLongitude", "decimalLatitude")],
+                                         data = cleaned_bas_bc)
 
 
-proj4string(sp_asc_bc) <- CRS("+proj=longlat +datum=WGS84")
+proj4string(sp_bas_bc) <- CRS("+proj=longlat +datum=WGS84")
 
 # install.packages("rgdal")
 library(rgdal)
 
 #project basemap to match spu shapefile
-tran_sp_asc_bc <- spTransform(sp_asc_bc, CRS("+proj=aea +lat_0=45 +lon_0=-126 +lat_1=50 +lat_2=58.5 +x_0=1000000 +y_0=0 +datum=NAD83 +units=m +no_defs")) 
-summary(tran_sp_asc_bc)
+tran_sp_bas_bc <- spTransform(sp_bas_bc, CRS("+proj=aea +lat_0=45 +lon_0=-126 +lat_1=50 +lat_2=58.5 +x_0=1000000 +y_0=0 +datum=NAD83 +units=m +no_defs")) 
+summary(tran_sp_bas_bc)
 
 #update to spTransformed Longitude & Latitude 
-cleaned_asc_bc$decimalLongitude <- tran_sp_asc_bc@coords[, 1]
-cleaned_asc_bc$decimalLatitude <- tran_sp_asc_bc@coords[, 2]
+cleaned_bas_bc$decimalLongitude <- tran_sp_bas_bc@coords[, 1]
+cleaned_bas_bc$decimalLatitude <- tran_sp_bas_bc@coords[, 2]
 
 # save the data as CSV
-write.csv(cleaned_asc_bc, "data/clean_sp_asc_bc", row.names = FALSE)
-cleaned_asc_bc <- read.csv("data/clean_sp_asc_bc")
+write.csv(cleaned_bas_bc, "data/clean_sp_bas_bc", row.names = FALSE)
+cleaned_bas_bc <- read.csv("data/clean_sp_bas_bc")
 
 ```
  
@@ -183,18 +186,18 @@ BC_win <- DATA$Window
 BC_win <- as.owin(DATA$Window)
 
 # convert into ppp object
-asc_data_ppp <- ppp(x = cleaned_asc_bc$decimalLongitude,
-                     y = cleaned_asc_bc$decimalLatitude,
+bas_data_ppp <- ppp(x = cleaned_bas_bc$decimalLongitude,
+                     y = cleaned_bas_bc$decimalLatitude,
                      window = BC_win)
 
-#length(asc_data_ppp)
-#anyDuplicated(asc_data_ppp)
-asc_data_ppp
+#length(bas_data_ppp)
+#anyDuplicated(bas_data_ppp)
+bas_data_ppp
 ```
 
 
 ```{r}
-plot(asc_data_ppp)
+plot(bas_data_ppp)
 ```
 
 ## 2.2 Statistical Packages
@@ -224,7 +227,7 @@ First, we have a coordinate plot to observe the general pattern in terms of the 
 plot(decimalLatitude ~ decimalLongitude,
      pch = 16,
      col = "#046C9A",
-     data = cleaned_asc_bc)
+     data = cleaned_bas_bc)
 
 ```
 From the initial coordinate plot, we have identified the following very preliminary observation :
@@ -256,7 +259,7 @@ plot(BC$Elevation, main = "Elevation")
 plot(BC$Forest, main = "Forest")
 #Dist_Water
 plot(BC$Dist_Water, main = "Distance to Water")
-plot(asc_data_ppp, 
+plot(bas_data_ppp, 
      which.marks = "species", # Which mark to use
      col = "grey", #The colour of the window
      cols = 'red', #The colours of the points
@@ -286,7 +289,7 @@ plot(asc_data_ppp,
 #              visible = TRUE, #Supporting calculations
 #             colmap = col_pal) # colour pallet
 
-# perspPoints(asc_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
+# perspPoints(bas_data_ppp, Z = BC$Elevation, M = fig, pch = 16, cex = 0.7, col="black")
 ```
 
 
@@ -297,12 +300,12 @@ Next, We try to pick Elevation to divide its values into 5 levels, and see if th
 #par(bg="grey40", cex.main = 2),
 #main = "Elevation classes")
 
-#points(asc_data_ppp, pch = 16, cex = 0.35, col="green")
+#points(bas_data_ppp, pch = 16, cex = 0.35, col="green")
 ```
 ```{r}
 cut <- cut(BC$Elevation,5,
 labels = c("low","low-medium","medium","medium-high","high"))
-table(cut[asc_data_ppp]) #most in low elevation
+table(cut[bas_data_ppp]) #most in low elevation
 
 ```
 
@@ -314,13 +317,13 @@ Finding :
 ### 2.3.3 KDE Analysis (?? should this part be skipped, don't know its interpretation/purpose??)
 
 ```{r}
-# nn_dist <- nndist(asc_data_ppp)
-# marks(asc_data_ppp) <- nn_dist
-# plot(asc_data_ppp, main = "Ascomycota Distance",which.marks = "Dist", pch = 16)
-# BC$Elevation[asc_data_ppp]
-
+# nn_dist <- nndist(bas_data_ppp)
+# marks(bas_data_ppp) <- nn_dist
+# plot(bas_data_ppp, main = "Ascomycota Distance",which.marks = "Dist", pch = 16)
+# BC$Elevation[bas_data_ppp]
+# install.packages("kdensity")
 library("kdensity")
-asc_density <- density(BC$Elevation[asc_data_ppp])
+asc_density <- density(BC$Elevation[bas_data_ppp])
 province_density <- density(BC$Elevation$v, na.rm=T)
 
 
@@ -343,7 +346,7 @@ After preliminary EDA and high level plot, we will study various first moment de
 #### 2.3.5.a Intensity
 
 ```{r}
-intensity(asc_data_ppp)
+intensity(bas_data_ppp)
 ```
 
 #### 2.3.5.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
@@ -352,12 +355,12 @@ Note that the intensity is a very small number.  This is consistent with our plo
 
 
 ```{r}
-Q <- quadratcount(asc_data_ppp,
+Q <- quadratcount(bas_data_ppp,
                   nx = 4,
                   ny = 4)
 
 #Plot the output 
-plot(asc_data_ppp,
+plot(bas_data_ppp,
      pch = 16,
      cex = 0.5,
      cols = "#046C9A",
@@ -371,13 +374,13 @@ plot(Q, cex = 2, col = "red", add = T)
 plot(intensity(Q, image = T),
      main = "Ascomycota intensity")
 
-plot(asc_data_ppp,
+plot(bas_data_ppp,
      pch = 16,
      cex = 0.6,
      cols = "white",
      add = T)
 
-plot(asc_data_ppp,
+plot(bas_data_ppp,
      pch = 16,
      cex = 0.5,
      cols = "black",
@@ -392,11 +395,11 @@ quadrat.test(Q)
 
 In addition, We also perform a Likelihood Ratio Test to evaluate the degree of homogeneity as cross reference.
 ```{r}
-R <- bw.ppl(asc_data_ppp)
-LR <- scanLRTS(asc_data_ppp,r=R)
+R <- bw.ppl(bas_data_ppp)
+LR <- scanLRTS(bas_data_ppp,r=R)
 
 #plot(LR,"Likelihood Ratio Test")
-#plot(asc_data_ppp$window,"Likelihood Ratio Test")
+#plot(bas_data_ppp$window,"Likelihood Ratio Test")
 
 pvals <- eval.im(pchisq(LR,
                         df = 1,
@@ -405,7 +408,7 @@ pvals <- eval.im(pchisq(LR,
 
 #Plot the output
 plot(pvals, main = "Local p-values")
-plot(asc_data_ppp$window,add=T)
+plot(bas_data_ppp$window,add=T)
 ```
 
 Once again, these plots have strongly verified the spatial inhomogeneity nature of the fungi distribution :
@@ -427,10 +430,10 @@ elev <- BC$Elevation
 b <- quantile(elev,probs=(0:4)/4,type=2)
 Zcut <- cut(elev,breaks=b)
 V <- tess(image=Zcut)
-quadratcount(asc_data_ppp,tess=V)
+quadratcount(bas_data_ppp,tess=V)
 ```
 ```{r echo=FALSE,cache=TRUE}
-rho <- rhohat(asc_data_ppp,elev)
+rho <- rhohat(bas_data_ppp,elev)
 plot(rho,xlim=c(-200,1000))
 ```
 
@@ -444,11 +447,11 @@ forest <- BC$Forest
 b <- quantile(forest,probs=(0:4)/4,type=2)
 Zcut <- cut(forest,breaks=b)
 V <- tess(image=Zcut)
-quadratcount(asc_data_ppp,tess=V)
+quadratcount(bas_data_ppp,tess=V)
 ```
 
 ```{r echo=FALSE, cache=TRUE}
-rho <- rhohat(asc_data_ppp,forest)
+rho <- rhohat(bas_data_ppp,forest)
 plot(rho)
 ```
 
@@ -463,10 +466,10 @@ dist <- BC$Dist_Water
 b <- quantile(dist,probs=(0:4)/4,type=2)
 Zcut <- cut(dist,breaks=b)
 V <- tess(image=Zcut)
-quadratcount(asc_data_ppp,tess=V)
+quadratcount(bas_data_ppp,tess=V)
 ```
 ```{r echo=FALSE, cache=TRUE}
-rho <- rhohat(asc_data_ppp,dist)
+rho <- rhohat(bas_data_ppp,dist)
 plot(rho)
 ```
 
@@ -495,7 +498,7 @@ We firstly use the typical K-function to measure the spatial clustering and poin
 # rank = 1 means the max and min
 # Border correction is to correct for edges around the window
 # values will be used for CI
-E_asc <- envelope(asc_data_ppp,
+E_asc <- envelope(bas_data_ppp,
                   Kest,
                   correction="border",
                   rank = 1,
@@ -512,16 +515,16 @@ plot(E_asc,
 
 As inhomogeneity has been observed, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
 ```{r cache=TRUE}
-lambda_asc <- density(asc_data_ppp, bw.ppl)
-Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
+lambda_asc <- density(bas_data_ppp, bw.ppl)
+Kinhom_asc <- Kinhom(bas_data_ppp, lambda_asc)
 
 #Estimate a strictly positive density
-lambda_asc_pos <- density(asc_data_ppp,
+lambda_asc_pos <- density(bas_data_ppp,
                           sigma=bw.ppl,
                           positive=TRUE)
 
 #Simulation envelope (with points drawn from the estimated intensity)
-E_asc_inhom <- envelope(asc_data_ppp,
+E_asc_inhom <- envelope(bas_data_ppp,
                         Kinhom,
                         simulate = expression(rpoispp(lambda_asc_pos)),
                         correction="border",
@@ -549,7 +552,7 @@ Finding :
 We are also interested in checking the points relation using pair correlation function.
 ```{r}
 # Estimate the g function
-pcf_asc <- pcf(asc_data_ppp)
+pcf_asc <- pcf(bas_data_ppp)
 
 pcf_asc
 plot(pcf_asc,xlim=c(0,50000),main="Pair Correlation Function")
@@ -558,12 +561,12 @@ The above estimator also assumes homogeneity.  Let's relax this assumption to pr
 
 ```{r}
 #Simulation envelope (with points drawn from the estimated intensity)
-pcf_asc_inhom <- envelope(asc_data_ppp,
+pcf_asc_inhom <- envelope(bas_data_ppp,
                           pcfinhom,
                           simulate = expression(rpoispp(lambda_asc_pos)),
                           rank = 1,
                           nsim = 19)
-
+   
 
 plot(pcf_asc_inhom,
      xlim = c(0,120000),
@@ -581,22 +584,22 @@ Finding :
 In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  To do this, we will try to fit model with different polynomial degree terms and then assess for the performance gains versus the cost of the extra complexity.
 
 ```{r}
-fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
+fit <- ppm(bas_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
 fit
 ```
 
 Elevation and Forest are significant but Distance to Water isn't.  OK, then try one higher order.
 
 ```{r}
-fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2), data = BC)
+fit <- ppm(bas_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2), data = BC)
 fit
 ```
 
 Similarly, after several rounds of tuning (the details are not shown here due to repetitive and routine nature), the following seems to be a improved fit :
 ```{r}
-fit_simple <- ppm(asc_data_ppp ~ Elevation + Forest, data = BC)
+fit_simple <- ppm(bas_data_ppp ~ Elevation + Forest, data = BC)
 fit_simple
-fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Forest + I(Forest^2), data = BC)
+fit <- ppm(bas_data_ppp ~ Elevation + I(Elevation^2) + Forest + I(Forest^2), data = BC)
 fit
 ```
 
@@ -678,7 +681,7 @@ As the above analysis indicated a room for improvement, we will finally try to a
 library(splines)
 
 #Fit the PPP model
-fit_smooth <- ppm(asc_data_ppp ~ bs(Elevation,7) + bs(Forest, 3), data = BC, use.gam = TRUE)
+fit_smooth <- ppm(bas_data_ppp ~ bs(Elevation,7) + bs(Forest, 3), data = BC, use.gam = TRUE)
 
 fit_smooth
 
@@ -727,12 +730,13 @@ plot(fit_smooth,
      main = "Estimated Fungi intensity")
 
 #Overlay the ocations
-plot(asc_data_ppp,
+
+plot(bas_data_ppp,
      pch = 16,
      cex = 0.6,
      cols = "white",
      add = TRUE)
-plot(asc_data_ppp,
+plot(bas_data_ppp,
      pch = 16,
      cex = 0.5,
      cols = "black",
