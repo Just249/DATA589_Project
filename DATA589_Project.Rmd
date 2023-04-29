@@ -1,7 +1,7 @@
 ---
-title: "DATA589_Project"
+title: "DATA589 Project : Spatial Analysis of Ascomycota (Fungi) "
 author: "Justin Chan, CM Tong (Kenny)"
-date: "2023-04-14"
+date: "2023-04-29"
 output:
   pdf_document: default
   html_document: default
@@ -554,9 +554,9 @@ Finding :
 
 
 ### 2.3.6 Model Fitting and Selection with AIC
-In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  We will try to start with the simplest linear models.  Then we will adjust the model acccording to the data behaviour and increase the model complexity if situation warranted.
+In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  We will try to start with the simplest linear models.  Then we will adjust the model according to the data behaviour and increase the model complexity if situation warrants.
 
-Lurking Variable plot could give us some insight on whether or not we should include the co variate that were missing from our original model. After know some potential covariates that could improve our model, Partial Residual Plot can then help us to understand if the added covariate have a linear or non-linear relationship with our independent variable, which could allow us to refine our model by using residual as a diagnostic tool. We can then use the Likelihood Ratio Test to confirm whether we can increase the fit of our model by adding more covariates(complexity) to our model.
+Lurking Variable plot could give us some insight on whether or not we should include the co variate that were missing from our original model. After knowing some potentially useful covariates that could improve our model, Partial Residual Plot can then help us to understand if the added covariates have linear or non-linear relationship with our independent variable, which could allow us to refine our model by using residual as a diagnostic tool. We can then use the Likelihood Ratio Test to confirm whether we can increase the fit of our model by adding more covariates(complexity) to our model.
 
 First we would Build our model using only Elevation as our predictor:
 
@@ -589,7 +589,7 @@ lurking(fit_simple,
         main = "Forest")
 ```
 
-Based on the above Lurking plot, we can see that the all Forest,HFI,Dist_Water have some relation with our predict variable. So we would fit them individually to our model and using Partial Residual to see weather if their relation is linear or Quadratic and then use Likelihood Ratio Test to see if our propose model(more complex model) are better at predicting then our original model(simpler model).
+Based on the above Lurking plots, we can see that the all Forest,HFI,Dist_Water have some relation with our predict variable. So we would fit them individually to our model and using Partial Residual to see weather if their relation is linear or Quadratic and then use Likelihood Ratio Test to see if our proposed models (more complex models) are better at prediction than our original model (simpler model).
 
 First, we add Dist_Water into our model and to see if Dist_Water have a linear or non-linear relationship with our trend:
 
@@ -599,7 +599,7 @@ par_res <- parres(fit_simple, "Dist_Water")
 plot(par_res,main = "asc_data_ppp ~ Elevation + Dist_Water")  #obs is far from fitted line
 
 ```
-Looks like Dist_Water have a non-linear relationship with our trend. We then can increase the complexity of our covariate by using a high order polynomials to see will out fitted line follow closely with out observed line:
+Looks like Dist_Water have a non-linear relationship with our trend. We then can increase the complexity of our covariate by using a high order polynomials to evaluate the degree of fitting:
 ```{r echo=FALSE, warning=FALSE}
 fit_simple1 <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^2)  , data = BC)
 par_res <- parres(fit_simple1, "Dist_Water")
@@ -613,7 +613,7 @@ par_res <- parres(fit_simple2, "Dist_Water")
 
 plot(par_res,main = "asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)")
 ```
-Visually, our model fitting have improved after adding higher polynomials for both Elevation and Dist_Water. Now we want to run through the Likelihood ratio test to see if this more complex model are in fact increasing the fit of our data compared to our original model. The null-hypothesis of this test is the simple model(reduced model), if the p-value of the test is lower then our significant value(0.05) mean that our more complex model are a better fit of our data. suggesting we should reject the simple model and favor the more complex model. 
+Visually, our model fitting have improved after adding higher polynomials for both Elevation and Dist_Water. Now we want to run through the Likelihood ratio test to see if this more complex model has in fact increased the fitting of our data compared to our original model. The null-hypothesis of this test is the simple model(reduced model), if the p-value of the test is lower then our significant value(0.05), it means that our more complex models are a better fit of our data. suggesting we should reject the simple model and favor the more complex model. 
 
 ```{r echo=FALSE, warning=FALSE}
 
@@ -626,10 +626,10 @@ anova(fit_simple, fit_simple2, test = "LRT" ) #small p_value favor Elevation + I
 #we adopt Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
 ```
 
-From our Likelihood Ratio Test, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+From our Likelihood Ratio Test, we have achieved a low p-value of 2.2e-16, signify extra complexity is desirable.  Therefore we will adopt our new model.
 
 
-Through the same model validation steps, we want to check if add Forest will improve the fitting of our model.After adding Forest into our model and add increase the complexity of our covariant to improve our fit, we have achieve the following result for our Likelihood Ratio Test result:
+Through the same model validation steps, we want to check if adding Forest will improve the fitting of our model.  After adding Forest into our model and increasing the complexity of our covariants, we have achieved the following result for our Likelihood Ratio Test result:
 ```{r echo=FALSE, warning=FALSE}
 #Check if we need Forest?
 
@@ -649,10 +649,10 @@ anova(fit_simple, fit_simple2, test = "LRT" ) #high p_value favor orginal Elevat
 #we keep Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
 
 ```
-From the above Likelihood Ratio Test on the model that have include Forest, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+From the above Likelihood Ratio Test on the model that have include Forest, we have achieved a low p-value of 2.2e-16, signifying extra complexity is wanted. so we will adopt our new model.
 
 
-Through the same model validation steps to check if add HFI will improve the fitting of our model.After adding HFI into our model and add increase the complexity of our covariant to improve our fit, we have achieve the following result for our Likelihood Ratio Test result:
+Similarly, the same model validation steps will be taken to assess the use of the HFI variable for our model fitting.  After adding HFI into our model, we have achieved the following result from our Likelihood Ratio Test result:
 ```{r echo=FALSE, warning=FALSE}
 fit_simple <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3) + Forest + I(Forest^2), data = BC)
 
@@ -672,7 +672,7 @@ anova(fit_simple, fit_simple2, test = "LRT" ) #high p_value favor orginal Elevat
 
 ```
 
-From the above Likelihood Ratio Test on the model that have include HFI, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+From the above updated Likelihood Ratio Test,, we have now achieved a low p-value of 2.2e-16, implying that extra complexity is desirable.  Therefore we will adopt it as our new model.
 
 
 
@@ -705,7 +705,7 @@ From the above Likelihood Ratio Test on the model that have include HFI, we have
 fit_simple2
 ```
 
-The following conclusion is drawn :
+Following the above model fitting and assessment, the following conclusion is drawn :
 
 - Model section suggest us that all of our features are significant to our data
 - The model with quadratic terms provides a better fit to the data
@@ -731,17 +731,19 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{ -1.94~-~7.137738e-03~\mathrm{elevation
 
 
 #### 2.3.6.a Quadrat Test
-Let's see the quadrat test result of the higher degree polynomial model.
+Let's see the quadrat test result of our previous final derived model.
 
 ```{r}
 #Run the quadrat test
 quadrat.test(fit_simple2, nx = 4, ny = 4)
 
 ```
-Conclusion :
+
+Conclusion :  
+
 - This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
-- Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
+- Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on available covariates like Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
 
 \newpage
 
@@ -756,9 +758,20 @@ Relation with covariates has been studied.  Elevation, Distance to Water, and Fo
 
 ## 3.3 Correction for Inhomogeneity  
 For the second moment analysis, both K-function and PCF analysis have revealed much less possibility of clustering after recorrecting for inhomogeneity.   Although there are still potential clustering patterns identified at the beginning r-value range, 
-evidence of autocorrelation among the fungi can hardly be observed during the rest of the higher r value range.
+strong evidence of autocorrelation among the fungi can hardly be observed during the rest of the higher r value range.
 
 ## 3.4 Model Fitting and Validation
+Poisson Model allow us to define a framework for modeling point process, this allow us to treat the number of count in any given cell as poission distributed random variable. and after getting the model we can make better inference about the system and make prediction. In order for us to come up a model that could describe our model well, we first use Lurking Variable plot to gain some insight on whether or not we should include the covariate that were missing from our original model. After know some potential covariates that could improve our model, we then use Partial Residual Plot to understand what type of relationship is our missing covariate with our independent variable, which could allow us to further refine our model by using residual as a diagnostic tool. Lastly, we use Likelihood Ratio Test to confirm whether the new model can actually increase the fit of our model by adding more covariates(complexity) to our model. We then iterate this modeling fitting and validation process till we could find the right model for our data.
+
+Our Final Model:
+
+</br>
+<center>
+$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{ -1.94~-~7.137738e-03~\mathrm{elevation}(u)~+~1.761325e-06~\mathrm{elevation}(u)^2~-~4.447410e-05~\mathrm{Dist_Water}(u)~-~1.296935e-12~\mathrm{Dist_Water}(u)^3~-~3.017571e-02~\mathrm{forest}(u)~+~4.184102e-04~\mathrm{forest}(u)^2~+~1.149646e+01~\mathrm{HFI}(u)~-~6.876242e+00 ~\mathrm{HFI}(u)^2}$ 
+</center>
+</br>
+
+Form the above model, we can see that all of our features are significant in our model fitting, this indicated that Elevation, HFI, Dist_Water and Forest are a important explanatory factor of the intensity of Ascomycota. Indicated by the quadrat.test(), there is a significant deviation from our model's prediction, so there is still room for improvement in the future, which could achieve by adding more covariates and increase the complexity of existing covariates. Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process, considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
 
 
 \newpage
