@@ -556,147 +556,190 @@ Finding :
 ### 2.3.6 Model Fitting and Selection with AIC
 In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  We will try to start with the simplest linear models.  Then we will adjust the model acccording to the data behaviour and increase the model complexity if situation warranted.
 
-OK, as the above covariate analysis shows possibility of relation with Elevation, Dist_Water and Forest, we will start with a simple model comprising of all these three variables as below.
-```{r}
-fit_simple <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
-fit_simple
+Lurking Variable plot could give us some insight on whether or not we should include the co variate that were missing from our original model. After know some potential covariates that could improve our model, Partial Residual Plot can then help us to understand if the added covariate have a linear or non-linear relationship with our independent variable, which could allow us to refine our model by using residual as a diagnostic tool. We can then use the Likelihood Ratio Test to confirm whether we can increase the fit of our model by adding more covariates(complexity) to our model.
+
+First we would Build our model using only Elevation as our predictor:
+
+```{r echo=FALSE , warning=FALSE}
+fit_simple <- ppm(asc_data_ppp ~ Elevation  , data = BC)
 ```
 
-From this table, all three variables are found to be significant.  
-In addition, from the rhohat plots above, all three variables have not shown linear relation with the points.  So, we proceed to increment from linear to quadratic relation to increase the model complexity to see the performance.
-
-```{r}
-fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2) + Forest + I(Forest^2), data = BC)
-fit
+```{r echo=FALSE, warning=FALSE}
+fit_simple <- ppm(asc_data_ppp ~ Elevation  , data = BC)
+lurking(fit_simple,
+        BC$Dist_Water,
+        type = "raw",
+        cumulativ = F,
+        envelope = T,
+        xlab = "Gradient",
+        main = "Dist_Water")
+lurking(fit_simple,
+        BC$HFI,
+        type = "raw",
+        cumulativ = F,
+        envelope = T,
+        xlab = "Gradient",
+        main = "HFI")
+lurking(fit_simple,
+        BC$Forest,
+        type = "raw",
+        cumulativ = F,
+        envelope = T,
+        xlab = "Gradient",
+        main = "Forest")
 ```
 
-Now, the model gets more complicated.  We will evaluate if the additional cost overhead of adopting such a more complicated model is well justified by benchmarking with the AIC values.
+Based on the above Lurking plot, we can see that the all Forest,HFI,Dist_Water have some relation with our predict variable. So we would fit them individually to our model and using Partial Residual to see weather if their relation is linear or Quadratic and then use Likelihood Ratio Test to see if our propose model(more complex model) are better at predicting then our original model(simpler model).
 
-```{r}
-#AIC values
-AIC(fit); AIC(fit_simple)
-#Delta AIC
-AIC(fit_simple) - AIC(fit)
+First, we add Dist_Water into our model and to see if Dist_Water have a linear or non-linear relationship with our trend:
+
+```{r echo=FALSE, warning=FALSE}
+fit_simple <- ppm(asc_data_ppp ~ Elevation + Dist_Water, data = BC)
+par_res <- parres(fit_simple, "Dist_Water")
+plot(par_res,main = "asc_data_ppp ~ Elevation + Dist_Water")  #obs is far from fitted line
+
+```
+Looks like Dist_Water have a non-linear relationship with our trend. We then can increase the complexity of our covariate by using a high order polynomials to see will out fitted line follow closely with out observed line:
+```{r echo=FALSE, warning=FALSE}
+fit_simple1 <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^2)  , data = BC)
+par_res <- parres(fit_simple1, "Dist_Water")
+
+plot(par_res,main = "asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^2)")  #Better with  I(Elevation^2) and I(Dist_Water^2)
+
+# Check if new model better than old model
+fit_simple2 <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)  , data = BC)
+
+par_res <- parres(fit_simple2, "Dist_Water")
+
+plot(par_res,main = "asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)")
+```
+Visually, our model fitting have improved after adding higher polynomials for both Elevation and Dist_Water. Now we want to run through the Likelihood ratio test to see if this more complex model are in fact increasing the fit of our data compared to our original model. The null-hypothesis of this test is the simple model(reduced model), if the p-value of the test is lower then our significant value(0.05) mean that our more complex model are a better fit of our data. suggesting we should reject the simple model and favor the more complex model. 
+
+```{r echo=FALSE, warning=FALSE}
+
+
+#Check if the more complex model are better then the original model
+
+anova(fit_simple, fit_simple2, test = "LRT" ) #small p_value favor Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
+
+
+#we adopt Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
 ```
 
-We will also like to conduct a anova LRT test as an additional objective measurement to compare the two models :
-```{r}
-anova(fit_simple, fit, test = "LRT")
+From our Likelihood Ratio Test, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+
+
+Through the same model validation steps, we want to check if add Forest will improve the fitting of our model.After adding Forest into our model and add increase the complexity of our covariant to improve our fit, we have achieve the following result for our Likelihood Ratio Test result:
+```{r echo=FALSE, warning=FALSE}
+#Check if we need Forest?
+
+fit_simple <-  ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)  , data = BC)
+
+fit_simple2 <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3) + Forest + I(Forest^2), data = BC)
+
+par_res <- parres(fit_simple2, "Forest")
+# 
+# plot(par_res)
+
+#Check if the more complex model are better then the original model
+
+anova(fit_simple, fit_simple2, test = "LRT" ) #high p_value favor orginal Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
+
+
+#we keep Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
+
+```
+From the above Likelihood Ratio Test on the model that have include Forest, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+
+
+Through the same model validation steps to check if add HFI will improve the fitting of our model.After adding HFI into our model and add increase the complexity of our covariant to improve our fit, we have achieve the following result for our Likelihood Ratio Test result:
+```{r echo=FALSE, warning=FALSE}
+fit_simple <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3) + Forest + I(Forest^2), data = BC)
+
+fit_simple2 <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3) + Forest + I(Forest^2) + HFI + I(HFI^2) , data = BC)
+
+# #JUSTIN
+# par_res <- parres(fit_simple2, "HFI")
+
+# plot(par_res)
+
+#Check if the more complex model are better then the original model
+
+anova(fit_simple, fit_simple2, test = "LRT" ) #high p_value favor orginal Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
+
+
+#we keep Elevation + I(Elevation^2)  + Dist_Water+ I(Dist_Water^3)
+
+```
+
+From the above Likelihood Ratio Test on the model that have include HFI, we have achieved a low p-value of 2.2e-16, signify extra complexity is wanted. so we will adopt our new model.
+
+
+
+<!-- From this table, all three variables are found to be significant.   -->
+<!-- In addition, from the rhohat plots above, all three variables have not shown linear relation with the points.  So, we proceed to increment from linear to quadratic relation to increase the model complexity to see the performance. -->
+
+<!-- ```{r} -->
+<!-- fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2) + Forest + I(Forest^2), data = BC) -->
+<!-- fit -->
+<!-- ``` -->
+
+<!-- Now, the model gets more complicated.  We will evaluate if the additional cost overhead of adopting such a more complicated model is well justified by benchmarking with the AIC values. -->
+
+<!-- ```{r} -->
+<!-- #AIC values -->
+<!-- AIC(fit); AIC(fit_simple) -->
+<!-- #Delta AIC -->
+<!-- AIC(fit_simple) - AIC(fit) -->
+<!-- ``` -->
+
+<!-- We will also like to conduct a anova LRT test as an additional objective measurement to compare the two models : -->
+<!-- ```{r} -->
+<!-- anova(fit_simple, fit, test = "LRT") -->
+<!-- ``` -->
+
+
+
+```{r echo=FALSE, warning=FALSE}
+
+fit_simple2
 ```
 
 The following conclusion is drawn :
 
+- Model section suggest us that all of our features are significant to our data
 - The model with quadratic terms provides a better fit to the data
-- With such a significant delta AIC value, the extra complexity is well supported.
-- So, a possible model should be [model to be changed..........parameters to be updated............]
+- So, a possible model should be [Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^3) + Forest + I(Forest^2) + HFI + I(HFI^2)]
 
 </br>
 <center>
-$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-15.3~-~0.011~\mathrm{elevation}(u)~-~0.0000029~\mathrm{elevation}(u)^2~-~0.00035~\mathrm{forest}(u)~-~0.000000036~\mathrm{forest}(u)^2}$ 
+$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{ -1.94~-~7.137738e-03~\mathrm{elevation}(u)~+~1.761325e-06~\mathrm{elevation}(u)^2~-~4.447410e-05~\mathrm{Dist_Water}(u)~-~1.296935e-12~\mathrm{Dist_Water}(u)^3~-~3.017571e-02~\mathrm{forest}(u)~+~4.184102e-04~\mathrm{forest}(u)^2~+~1.149646e+01~\mathrm{HFI}(u)~-~6.876242e+00 ~\mathrm{HFI}(u)^2}$ 
 </center>
 </br>
 
 
-### 2.3.7 Model Validation 
-Now, given the following fitted model, we will finally evaluate the over model performance again with Quadrat Test and PPP Residuals.
+<!-- ### 2.3.7 Model Validation -->
+<!-- Now, given the following fitted model, we will finally evaluate the over model performance again with Quadrat Test and PPP Residuals. -->
 
-</br>
-<center>
-$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0.000003~\mathrm{elevation}(u)^2~-~0.042~\mathrm{forest}(u)~+~0.00018~\mathrm{forest}(u)^2}$ 
-</center>
-</br>
+<!-- </br> -->
+<!-- <center> -->
+<!-- $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0.000003~\mathrm{elevation}(u)^2~-~0.042~\mathrm{forest}(u)~+~0.00018~\mathrm{forest}(u)^2}$ -->
+<!-- </center> -->
+<!-- </br> -->
 
 
 
-#### 2.3.7.a Quadrat Test
 
+#### 2.3.6.a Quadrat Test
 Let's see the quadrat test result of the higher degree polynomial model.
 
 ```{r}
 #Run the quadrat test
-quadrat.test(fit, nx = 4, ny = 4)
+quadrat.test(fit_simple2, nx = 4, ny = 4)
 
 ```
-This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
-
-### 2.3.8 Higher Order Polynomial Fitting with Spline and Validation
-As the above analysis indicated a room for improvement, we would also like to try GAMs. However, as mentioned in the lab material, GAMs should allow more flexible covariate effects, but it has not been covered in course.  So, we would just have a very brief test using some dummy parameters given in the lab materials to have an initial impression of its potential performance. 
-
-```{r}
-library(splines)
-
-#Fit the PPP model
-fit_smooth <- ppm(asc_data_ppp ~ bs(Elevation,5) + bs(Forest, 5) + bs(Dist_Water,5) , data = BC, use.gam = TRUE)
-
-fit_smooth
-
-```
-```{r}
-#Calculate the partial residuals as a function of elevation
-par_res_elev <- parres(fit_smooth, "Elevation")
-
-#Calculate the relative intensity as a function of gradient
-par_res_forest <- parres(fit_smooth, "Forest")
-
-#Calculate the relative intensity as a function of gradient
-par_res_water <- parres(fit_smooth, "Dist_Water")
-
-#Side by side plotting
-par(mfrow = c(1,2))
-plot(par_res_elev,
-     legend = FALSE,
-     lwd = 2,
-     main = "",
-     xlab = "Elevation")
-plot(par_res_forest,
-     legend = FALSE,
-     lwd = 2,
-     main = "",
-     xlab = "Forest")
-plot(par_res_water,
-     legend = FALSE,
-     lwd = 2,
-     main = "",
-     xlab = "Distance to Water")
-
-```
-
-Now, compare the AIC values for both the simpler and higher polynomial degree models.
-```{r}
-#AIC values
-AIC(fit); AIC(fit_smooth)
-
-#Delta AIC
-AIC(fit) - AIC(fit_smooth)
-
-#Likelihood ratio test
-anova(fit, fit_smooth, test = "LRT")
-```
-
-All these suggest that this complex models provides a better fit to the data.  Let's finally visualize the predictions as before.
-
-```{r}
-#Plot the model predictions
-plot(fit_smooth,
-     se = FALSE,
-     superimpose = FALSE,
-     main = "Estimated Fungi intensity")
-
-#Overlay the ocations
-plot(asc_data_ppp,
-     pch = 16,
-     cex = 0.6,
-     cols = "white",
-     add = TRUE)
-plot(asc_data_ppp,
-     pch = 16,
-     cex = 0.5,
-     cols = "black",
-     add = TRUE)
-
-```
-From this visualization, the following is observed :
-
+Conclusion :
+- This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
 - Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
 
