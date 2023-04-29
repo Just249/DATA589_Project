@@ -747,7 +747,7 @@ Conclusion :
 
 \newpage
 
-# 3. Discussion:   
+# 3. Discussion and Conclusion   
 
 ## 3.1 Data Inhomogeneity  
 From the various plots and analysis above, the inhomogeneity of the fungi occurrence can be concluded with strong evidence. The Quadrat Test and Hotspot Analysis provide certain significant evidence suggesting the data inhomogeneity. While the occurrences are concentrated in only a few high-density clusters, most regions in BC have no record of the fungi.
@@ -761,7 +761,7 @@ For the second moment analysis, both K-function and PCF analysis have revealed m
 strong evidence of autocorrelation among the fungi can hardly be observed during the rest of the higher r value range.
 
 ## 3.4 Model Fitting and Validation
-Poisson Model allow us to define a framework for modeling point process, this allow us to treat the number of count in any given cell as poission distributed random variable. and after getting the model we can make better inference about the system and make prediction. In order for us to come up a model that could describe our model well, we first use Lurking Variable plot to gain some insight on whether or not we should include the covariate that were missing from our original model. After know some potential covariates that could improve our model, we then use Partial Residual Plot to understand what type of relationship is our missing covariate with our independent variable, which could allow us to further refine our model by using residual as a diagnostic tool. Lastly, we use Likelihood Ratio Test to confirm whether the new model can actually increase the fit of our model by adding more covariates(complexity) to our model. We then iterate this modeling fitting and validation process till we could find the right model for our data.
+Poisson Model allows us to define a framework for modeling point process, with the count as Poisson distributed random variable. In order to come up a model that could describe our model well, we first use Lurking Variable plot to gain some insight on whether or not we should include any new covariates on top of the existing model. We also use Partial Residual Plot to assess the possible relationship (say, quadratic or linear) between the covariates and the fungi distribution.  This allows us to further refine our model effectively.  Lastly, we use Likelihood Ratio Test to confirm whether the new model can actually increase the fit of our model. We then iterate this modeling fitting and validation process till we could find a better yet achievable model for our data.
 
 Our Final Model:
 
@@ -771,7 +771,7 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{ -1.94~-~7.137738e-03~\mathrm{elevation
 </center>
 </br>
 
-Form the above model, we can see that all of our features are significant in our model fitting, this indicated that Elevation, HFI, Dist_Water and Forest are a important explanatory factor of the intensity of Ascomycota. Indicated by the quadrat.test(), there is a significant deviation from our model's prediction, so there is still room for improvement in the future, which could achieve by adding more covariates and increase the complexity of existing covariates. Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process, considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
+Form the above model, we can see that all of our features are significant in our model fitting : Elevation, HFI, Dist_Water and Forest are important explanatory factors of the intensity of Ascomycota. Quadrat.test() shows there is still a significant deviation from our model's prediction, so there is still room for improvement in the future.  Such improvement can possible be achieved by adding more covariates and the degrees/complexity of the model. Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  Moreover, We understand there are certain limitation when we are formulating our models.  We are also aware that we have only a few available covariates at our disposal, which are likely insufficient for our model fitting given the complex biodiversity behaviour in the fungi world.  Finally, we recognize there are many other variables (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. ) not being able to be considered due to the limited information.  
 
 
 \newpage
