@@ -21,11 +21,12 @@ The Ascomycota also plays an important role in most land-based ecosystems, becau
 
 
 ## 1.2 Data Source
-Data is downloaded from GBIF. 
+Data is downloaded directly from GBIF with the gbif R package.  According to the GBIF classification system, Ascomycota comprises of about 20 Classes as immediate children species.  The whole phylum makes up a total of 16 million occurences records across the globe.
 
+The detail will be discussed in the later sections.
 
 ## 1.3 Research Questions
-Due to the potential medically and various practical values of Ascomycota, we would be interested in exploring and investigating its growth distribution, patterns and population density in terms of spatial analysis.  
+Due to the potential medical and various practical values of Ascomycota mentioned above, we would be interested in exploring and investigating its growth distribution, patterns and population density in terms of spatial analysis.  
 
 During this project, we hope to answer the following questions :
 
@@ -52,7 +53,7 @@ A total of about 69,000 occurrences records are available in BC, which are conso
 - iNaturalist Research-grade Observations
 - Assembly and activity of microbial communities in the Pacific temperate rainforest
 
-But as the origin dataset contains about 60K occurrences, the whole dataset takes a tremendous amount of time (4 hours just to load the complete set of data from gbif api!) to load and analyze the data. After consulting the course instructor, we have set the limit to 2000 records with the gbif api.
+We tried to load the complete 69K occurrences set into our computer, we found that loading the whole dataset takes a tremendous amount of time for most processes and operation.  For example, it took about 4 hours just to load the complete set of data from gbif api!  Running operations like scanLRTS(), rhohat(), envelope() took even longer!  After consulting the course instructor, we have set the limit to 2000 records when we retrieve the data with the gbif api to make it 'computing-resources affordable'.
  
 ```{r}
 # install.packages("rgbif")
@@ -213,7 +214,7 @@ The following packages are used to perform the analysis :
 ## 2.3 Analytical Workflow 
 The report will start with some basic Exploratory Data Analysis and basic data plottings to have an initial understanding of the overall data points pattern.  
 
-We will then conduct First Moment Analysis which will include homogeneity analysis and covariates study on some variables.  Afterwards, we will perform Second Moment analysis where popular tools such as K-function and Pair Correlation Function will be deployed to investigate any clustering.  
+We will then conduct First Moment Analysis including homogeneity analysis and covariates study on some variables.  Afterwards, we will perform Second Moment analysis where popular tools such as K-function and Pair Correlation Function will be deployed to investigate any clustering.  
 
 The report will then conduct model fitting and selection with both lower and higher polynomial variable terms and evaluate the fitness and its costs with AIC values.  The report is concluded by a final model validation process for the resulted model to assess the wellness of the model fitting.
 
@@ -232,13 +233,13 @@ plot(decimalLatitude ~ decimalLongitude,
 From the initial coordinate plot, we have identified the following very preliminary observation :
 
 - Points clustering is highly likely as a large group of data points is spotted at the decimal Longitude between 1000K and 1300K and Latitude between 4e+5 and 5e+5.
-- Therefore is only a single major and significant large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering. 
+- There is only a single major and significantly large clustering only.  Although there are some other scattered points observed near the Longitude range 1500K-1800K, they are simply incomparable to the large clustering in terms of the scale. 
 
 
 
 ### 2.3.2 EDA : BC Windows and Covariates Data Walkthough
 
-Let's see what the BC_Covariates.Rda file provide us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
+Let's see what the BC_Covariates.Rda file provides us which may help us to identify and choose appropriate fields to be used in the covariates analysis in the later part of this analysis.  It should contain the information on the BC province :
 
 - Windows
 - Elevation
@@ -246,11 +247,7 @@ Let's see what the BC_Covariates.Rda file provide us which may help us to identi
 - Dist Water
 
 ```{r}
-#plot(BC_win, pch = 16, cols = "red", main = "BC windows data")
-```
-
-```{r}
-par(mfrow=c(2,2))
+#par(mfrow=c(2,2))
 
 #Elevation
 plot(BC$Elevation, main = "Elevation")
@@ -292,7 +289,7 @@ plot(asc_data_ppp,
 ```
 
 
-Next, We try to pick Elevation to divide its values into 5 levels, and see if there are any patterns for the distribution of the fungi points in the different elevation level.
+Next, We try to pick Elevation to divide its values into 5 levels, and see if there are any patterns for the distribution of the fungi points in the different elevation levels.
 ```{r eval=FALSE, include=FALSE}
 #plot(cut(BC$Elevation,5,
 #labels = c("low","low-medium","medium","medium-high","high")),
@@ -310,10 +307,12 @@ table(cut[asc_data_ppp]) #most in low elevation
 
 Finding :
 
-- Overwhelming majority of the fungi points are found in the low elevation region
+- Overwhelming majority of the fungi points are found in the low elevation region.
+- There is a trend : the higher the elevation region is, the less occurrences of the fungi is observed.
+- The change is like 'exponentially declined'.
 
 ### 2.3.3 First Moment Descriptive Statistics
-After preliminary EDA and high level plot, we will study various first moment descriptive statistical measures.
+After preliminary EDA and very high level plots, we will study various first moment descriptive statistical measures.
 
 
 #### 2.3.3.a Intensity
@@ -389,7 +388,7 @@ Once again, these plots have strongly verified the spatial inhomogeneity nature 
 
 - Overwhelming majority of the regions have zero or near zero points.
 - Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
-- Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions are purely yelliw (i.e. p=1).
+- Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions rarely have significant distribution, and therefore are shown in purely yellow (i.e. p=1).
 
 ### 2.3.4 Covariate Study
 Now, we will study the covariate behaviour individually, and see whether there are strong support or observable patterns.  We will conduct quantile split into 4 sections for each of the covariates.
@@ -454,11 +453,11 @@ Observation :
 
 - For Elevation Level :
   - It is obvious that the fungi is overwhelmingly correlated to the low elevation level.  
-  - The proportion of occurrence that appears in the lowest elevation sector accounts for more than 97% of the identified points.
+  - The proportion of occurrence that appears in the lowest elevation sector accounts for about 95% of the identified points.  
+  - A significant clustering is observed at the low elevation.
 - For Forest and Distance to Water :
   - It is observed that the fungi is correlated to both Forest and distance .  
-  - The proportion of occurrence that appears in the respective smallest sectors account for about 50% of the identified points.
-
+  - Clustering of observed at the low forest level and at middle distance to water level.
 
 ### 2.3.5 Second Moment Descriptives
 To continue the analysis, we will explore the second moment descriptives to uncover any variances and correlation characteristics of the data. 
