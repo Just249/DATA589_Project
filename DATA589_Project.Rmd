@@ -21,8 +21,8 @@ The Ascomycota also plays an important role in most land-based ecosystems, becau
 
 
 ## 1.2 Data Source
-Data is downloaded from GBIF with the download link below :
-URL: https://www.gbif.org/occurrence/download/0165170-230224095556074
+Data is downloaded from GBIF. 
+
 
 ## 1.3 Research Questions
 Due to the potential medically and various practical values of Ascomycota, we would be interested in exploring and investigating its growth distribution, patterns and population density in terms of spatial analysis.  
@@ -52,7 +52,8 @@ A total of about 69,000 occurrences records are available in BC, which are conso
 - iNaturalist Research-grade Observations
 - Assembly and activity of microbial communities in the Pacific temperate rainforest
 
-
+But as the origin dataset contains about 60K occurrences, the whole dataset takes a tremendous amount of time (4 hours just to load the complete set of data from gbif api!) to load and analyze the data. After consulting the course instructor, we have set the limit to 2000 records with the gbif api.
+ 
 ```{r}
 # install.packages("rgbif")
 library(rgbif)
@@ -103,6 +104,7 @@ asc_bc_data <- read.csv("data/asc_bc_data.csv")
 ```
 
 A total of 75 data colummns are available.  These columns can be broadly divided into the following three main categories :
+
 - Scientific Classification and Taxonomy Details : Scientific Name, Hierarchy of Biological classification and taxonomic ranks, etc
 - Point and Location Details : Continent, State/Province, Coordinates, Coordinates Uncertainty Meters, etc
 - Data Collection Details : Collector, Date and Timestamp
@@ -120,7 +122,7 @@ cleaned_asc_bc <- asc_bc_data[ , c("decimalLongitude", "decimalLatitude", "order
                                   "verbatimEventDate", "collectionCode", "gbifID", "verbatimLocality"
                                   )]
 ```
-```{r}
+```{r eval=FALSE, include=FALSE}
 names(cleaned_asc_bc)
 
 
@@ -199,6 +201,7 @@ plot(asc_data_ppp)
 
 ## 2.2 Statistical Packages
 The following packages are used to perform the analysis :
+
 - rgbif : allow searching and retrieving data from GBIF, access various dataset metadata, species names, and occurences details
 - sp, rgdal : process, manipulate and transform the data source longitude and latitude information
 - spstat : provides many statistical tests, analysis and plots
@@ -306,46 +309,23 @@ table(cut[asc_data_ppp]) #most in low elevation
 ```
 
 Finding :
+
 - Overwhelming majority of the fungi points are found in the low elevation region
 
-
-### 2.3.3 KDE Analysis
-
-```{r}
-# nn_dist <- nndist(asc_data_ppp)
-# marks(asc_data_ppp) <- nn_dist
-# plot(asc_data_ppp, main = "Ascomycota Distance",which.marks = "Dist", pch = 16)
-BC$Elevation[asc_data_ppp]
-
-library("kdensity")
-asc_density <- density(BC$Elevation[asc_data_ppp])
-province_density <- density(BC$Elevation$v, na.rm=T)
-
-
-plot(province_density, main = "KDE of elevation values within province and park locations", xlab = "Elevation", ylab = "Density", col="blue")
-lines(asc_density, col = "red")
-legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "red"), bty = "n")
-
-# 
-# plot(province_density, main = "KDE of elevation values within province and park locations", xlab = "Elevation", ylab = "Density", col="blue")
-# lines(park_density, col = "red")
-# legend("topright", legend = c("Province", "Parks"), lty = 1, col = c("blue", "red"), bty = "n")
-
-```
-
-
-### 2.3.4 First Moment Descriptive Statistics
+### 2.3.3 First Moment Descriptive Statistics
 After preliminary EDA and high level plot, we will study various first moment descriptive statistical measures.
 
 
-#### 2.3.5.a Intensity
+#### 2.3.3.a Intensity
 
 ```{r}
 intensity(asc_data_ppp)
 ```
 
-#### 2.3.5.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
-Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are spresely located in the BC.  Let's verify this with the Quadrat Count Plot.
+
+#### 2.3.3.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
+
+Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are sparsely located in the BC.  Let's verify this with the Quadrat Count Plot.
 
 
 ```{r}
@@ -388,7 +368,7 @@ quadrat.test(Q)
 ```
 
 In addition, We also perform a Likelihood Ratio Test to evaluate the degree of homogeneity as cross reference.
-```{r}
+```{r cache=TRUE}
 R <- bw.ppl(asc_data_ppp)
 LR <- scanLRTS(asc_data_ppp,r=R)
 
@@ -411,11 +391,12 @@ Once again, these plots have strongly verified the spatial inhomogeneity nature 
 - Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
 - Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions are purely yelliw (i.e. p=1).
 
-### 2.3.6 Covariate Study
+### 2.3.4 Covariate Study
 Now, we will study the covariate behaviour individually, and see whether there are strong support or observable patterns.  We will conduct quantile split into 4 sections for each of the covariates.
 
 
-#### 2.3.6.a Covariate Variable : Elevation
+#### 2.3.4.a Covariate Variable : Elevation
+
 Let's start with Elevation.
 
 ```{r}
@@ -425,13 +406,14 @@ Zcut <- cut(elev,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
-```{r echo=FALSE}
+```{r echo=FALSE, cache=TRUE}
 rho <- rhohat(asc_data_ppp,elev)
 plot(rho)
 ```
 
 
-#### 2.3.6.b Covariate Variable : Forest
+#### 2.3.4.b Covariate Variable : Forest
+
 Then, let's see Forest.
 
 ```{r}
@@ -442,14 +424,15 @@ V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, cache=TRUE}
 rho <- rhohat(asc_data_ppp,forest)
 plot(rho)
 ```
 
 
 
-#### 2.3.6.c Covariate Variable : Distance to Water
+#### 2.3.4.c Covariate Variable : Distance to Water
+
 Followed by Distance to Water.
 
 ```{r}
@@ -459,13 +442,13 @@ Zcut <- cut(dist,breaks=b)
 V <- tess(image=Zcut)
 quadratcount(asc_data_ppp,tess=V)
 ```
-```{r echo=FALSE}
+```{r echo=FALSE, cache=TRUE}
 rho <- rhohat(asc_data_ppp,dist)
 plot(rho)
 ```
 
 
-#### 2.3.6.d Section Conclusion
+#### 2.3.4.d Section Conclusion
 
 Observation : 
 
@@ -477,13 +460,14 @@ Observation :
   - The proportion of occurrence that appears in the respective smallest sectors account for about 50% of the identified points.
 
 
-### 2.3.7 Second Moment Descriptives
+### 2.3.5 Second Moment Descriptives
 To continue the analysis, we will explore the second moment descriptives to uncover any variances and correlation characteristics of the data. 
 
-#### 2.3.7.a Ripley's K-function
+#### 2.3.5.a Ripley's K-function
+
 We firstly use the typical K-function to measure the spatial clustering and point pattern.
 
-```{r}
+```{r cache=TRUE}
 # Bootstrapped CIs
 # rank = 1 means the max and min
 # Border correction is to correct for edges around the window
@@ -504,7 +488,7 @@ plot(E_asc,
 ```
 
 As inhomogeneity has been observed, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
-```{r}
+```{r cache=TRUE}
 lambda_asc <- density(asc_data_ppp, bw.ppl)
 Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
 
@@ -537,8 +521,10 @@ Finding :
 - When corrected for inhomogeneity, such clustering pattern is no longer observed.
 
 
-#### 2.3.7.b Pair Correlation Function
+#### 2.3.5.b Pair Correlation Function
+
 We are also interested in checking the points relation using pair correlation function.
+
 ```{r cache=TRUE}
 # Estimate the g function
 pcf_asc <- pcf(asc_data_ppp)
@@ -569,7 +555,7 @@ Finding :
 - When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
 
 
-### 2.3.8 Model Fitting and Selection with AIC
+### 2.3.6 Model Fitting and Selection with AIC
 In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.
 
 ```{r}
@@ -619,7 +605,7 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 </br>
 
 
-### 2.3.9 Model Validation 
+### 2.3.7 Model Validation 
 Now, given the following fitted model, we will finally evaluate the over model performance again with Quadrat Test and PPP Residuals.
 
 </br>
@@ -630,8 +616,10 @@ $\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0
 
 
 
-#### 2.3.9.a Quadrat Test
+#### 2.3.7.a Quadrat Test
+
 Let's see the quadrat test result of the higher degree polynomial model.
+
 ```{r}
 #Run the quadrat test
 quadrat.test(fit, nx = 4, ny = 4)
@@ -639,27 +627,7 @@ quadrat.test(fit, nx = 4, ny = 4)
 ```
 This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 
-
-#### 2.3.9.b PPP Residuals (SKIPPED AS RETURN ERROR)
-# We will also check the distribution of residuals value of the model. 
-```{r eval=FALSE, include=FALSE}
-# Calculate the residuals
-res <- residuals(fit)
-
-#Visualise
-plot(res,
-#     cols = "transparent",
-     main="Residuals Plots")
-
-```
-From the plot, it's observed that :
-
-- The residuals are small in magnitude (e^-8).  
-- The negative residual values suggest over-prediction of the model.
-- There is room for improvement for the model
-
-
-### 2.3.10 Higher Order Polynomial Fitting with Spline and Validation
+### 2.3.8 Higher Order Polynomial Fitting with Spline and Validation
 As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
 
 ```{r}
