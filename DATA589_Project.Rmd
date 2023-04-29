@@ -23,7 +23,7 @@ The Ascomycota also plays an important role in most land-based ecosystems, becau
 ## 1.2 Data Source
 Data is downloaded directly from GBIF with the gbif R package.  According to the GBIF classification system, Ascomycota comprises of about 20 Classes as immediate children species.  The whole phylum makes up a total of 16 million occurences records across the globe.
 
-The detail will be discussed in the later sections.
+The details will be discussed in the later sections.
 
 ## 1.3 Research Questions
 Due to the potential medical and various practical values of Ascomycota mentioned above, we would be interested in exploring and investigating its growth distribution, patterns and population density in terms of spatial analysis.  
@@ -37,10 +37,6 @@ During this project, we hope to answer the following questions :
 - What are the possible prediction models? Does complicated model outperform simple model?  Is the complicated model worth it?
 - Can higher-degree polynomial model further improve the prediction model?
 
-## 1.4 References
-- https://www.britannica.com/science/fungus/Outline-of-classification-of-fungi
-- https://en.wikipedia.org/wiki/Penicillium
-- https://en.wikipedia.org/wiki/Ascomycota
 
 \newpage
 
@@ -200,10 +196,10 @@ asc_data_ppp
 plot(asc_data_ppp)
 ```
 
-## 2.2 Statistical Packages
+## 2.2 Statistical Packages  
 The following packages are used to perform the analysis :
 
-- rgbif : allow searching and retrieving data from GBIF, access various dataset metadata, species names, and occurences details
+- rgbif : allow searching and retrieving data from GBIF, access various dataset metadata, species names, and occurrences details
 - sp, rgdal : process, manipulate and transform the data source longitude and latitude information
 - spstat : provides many statistical tests, analysis and plots
 - maptools : provides utilities to handle and analyze spatial objects
@@ -211,7 +207,7 @@ The following packages are used to perform the analysis :
 
 \newpage
 
-## 2.3 Analytical Workflow 
+## 2.3 Analytical Workflow  
 The report will start with some basic Exploratory Data Analysis and basic data plottings to have an initial understanding of the overall data points pattern.  
 
 We will then conduct First Moment Analysis including homogeneity analysis and covariates study on some variables.  Afterwards, we will perform Second Moment analysis where popular tools such as K-function and Pair Correlation Function will be deployed to investigate any clustering.  
@@ -309,7 +305,7 @@ Finding :
 
 - Overwhelming majority of the fungi points are found in the low elevation region.
 - There is a trend : the higher the elevation region is, the less occurrences of the fungi is observed.
-- The change is like 'exponentially declined'.
+- The fungi density is dropping substantially when the elevation increases, until it reached the level of zero starting from the meidum-high elevation level.
 
 ### 2.3.3 First Moment Descriptive Statistics
 After preliminary EDA and very high level plots, we will study various first moment descriptive statistical measures.
@@ -322,9 +318,9 @@ intensity(asc_data_ppp)
 ```
 
 
-#### 2.3.3.b Homogeneity Studies, Quadrat Test and Hotspot Analysis
+#### 2.3.3.b Homogeneity Studies, Quadrat Test and Hotspot Analysis  
 
-Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming majority of the points are sparsely located in the BC.  Let's verify this with the Quadrat Count Plot.
+Note that the intensity is a very small number.  This is consistent with our plots above.  There are not many points in the whole BC windows.  Overwhelming regions in BC have (nearly) zero occurrences while the rest are highly clustered in a few regions.  Let's verify this with the Quadrat Count Plot.
 
 
 ```{r}
@@ -360,13 +356,13 @@ plot(asc_data_ppp,
      add = T)
 ```
 
-Next, we perform a Qudart test of homogeneity
+Next, we perform a Quadrat test of homogeneity
 ```{r}
 #Quadrat test of homogeneity 
 quadrat.test(Q)
 ```
 
-In addition, We also perform a Likelihood Ratio Test to evaluate the degree of homogeneity as cross reference.
+In addition, We also perform a Likelihood Ratio Test to evaluate the degree of homogeneity as a cross reference.
 ```{r cache=TRUE}
 R <- bw.ppl(asc_data_ppp)
 LR <- scanLRTS(asc_data_ppp,r=R)
@@ -384,19 +380,19 @@ plot(pvals, main = "Local p-values")
 plot(asc_data_ppp$window,add=T)
 ```
 
-Once again, these plots have strongly verified the spatial inhomogeneity nature of the fungi distribution :
+Once again, these plots have strongly reinforced the spatial inhomogeneity nature of the fungi distribution :
 
 - Overwhelming majority of the regions have zero or near zero points.  The quadrat count plot has shown drastic difference between the quadrats.
-- From the intensity plot, The points are observed being clustered in the south-east region of BC
+- From the intensity plot, The points are observed being mostly clustered in the south-eastern region of BC
 - Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
-- Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions rarely have significant distribution, and therefore are shown in purely yellow (i.e. p=1).
+- Hot spot analysis shows only a very few prominent hot spots with low p-values which are mainly located in the southern region.  Most regions rarely have significant number of occurrences, and therefore are shown in high p-value (i.e. p=1).
 
 ### 2.3.4 Covariate Study
 Now, we will study the covariate behaviour individually, and see whether there are strong support or observable patterns.  We will conduct quantile split into 4 sections for each of the covariates.
 
 
-#### 2.3.4.a Covariate Variable : Elevation
-
+#### 2.3.4.a Covariate Variable : Elevation  
+   
 Let's start with Elevation.
 
 ```{r}
@@ -412,8 +408,7 @@ plot(rho)
 ```
 
 
-#### 2.3.4.b Covariate Variable : Forest
-
+#### 2.3.4.b Covariate Variable : Forest  
 Then, let's see Forest.
 
 ```{r}
@@ -431,8 +426,8 @@ plot(rho)
 
 
 
-#### 2.3.4.c Covariate Variable : Distance to Water
-
+#### 2.3.4.c Covariate Variable : Distance to Water  
+   
 Followed by Distance to Water.
 
 ```{r}
@@ -448,15 +443,15 @@ plot(rho)
 ```
 
 
-#### 2.3.4.d Section Conclusion
-
-Observation : 
+#### 2.3.4.d Section Conclusion  
+    
+Observation :  
 
 - For Elevation Level :
   - It is obvious that the fungi is overwhelmingly correlated to the low elevation level.  
   - The proportion of occurrence that appears in the lowest elevation sector accounts for about 95% of the identified points.  
   - A significant clustering is observed at the low elevation.
-  - There are basically a very few (if any) occurence for elevation higher than around 400m.
+  - There are basically a very few (if any) occurrences for elevation higher than around 400m.
 - For Forest and Distance to Water :
   - It is observed that the fungi is correlated to both Forest and distance .  
   - Clustering of observed at the low forest value range and at middle distance to water level.
@@ -554,7 +549,8 @@ plot(pcf_asc_inhom,
 
 Finding :
 
-- When corrected for homogeneity, the locations of the fungi appear not to have any significant correlations.
+- When corrected for homogeneity, the evidence of clustering becomes weaker now.
+- Except at the very beginning region of the r-value, the locations of the fungi do not exhibit significant deviation from the theoretical values, therefore lacking strong evidence of clustering or dispersal.
 
 
 ### 2.3.6 Model Fitting and Selection with AIC
@@ -699,7 +695,7 @@ plot(asc_data_ppp,
      add = TRUE)
 
 ```
-From this visualisation, the following is observed :
+From this visualization, the following is observed :
 
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
 - Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
@@ -707,10 +703,25 @@ From this visualisation, the following is observed :
 \newpage
 
 # 3. Discussion:   
-Provide a brief summary of your findings. Length: ca. 1 page.
+
+## 3.1 Data Inhomogeneity  
+From the various plots and analysis above, the inhomogeneity of the fungi occurrence can be concluded with strong evidence. The Quadrat Test and Hotspot Analysis provide certain significant evidence suggesting the data inhomogeneity. While the occurrences are concentrated in only a few high-density clusters, most regions in BC have no record of the fungi.
+
+
+## 3.2 BC Windows Covariates  
+Relation with covariates has been studied.  Elevation, Distance to Water, and Forest values are all appearing to be covariates and effectively affect fungi distribution.  Relatively speaking, the rhohat plots of different covariates reveal that the Elevation and Forest demonstrate less fluctuation/variation with the fungi density, while the distance to water suggests a more complicated model and relation with the fungi.
+
+## 3.3 Correction for Inhomogeneity  
+For the second moment analysis, both K-function and PCF analysis have revealed much less possibility of clustering after recorrecting for inhomogeneity.   Although there are still potential clustering patterns identified at the beginning r-value range, 
+evidence of autocorrelation among the fungi can hardly be observed during the rest of the higher r value range.
+
+## 3.4 Model Fitting and Validation
+
 
 \newpage
 
 # 4. References:   
-Include references to all necessary literature.
+- https://www.britannica.com/science/fungus/Outline-of-classification-of-fungi
+- https://en.wikipedia.org/wiki/Penicillium
+- https://en.wikipedia.org/wiki/Ascomycota
 
