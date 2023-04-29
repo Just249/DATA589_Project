@@ -386,7 +386,8 @@ plot(asc_data_ppp$window,add=T)
 
 Once again, these plots have strongly verified the spatial inhomogeneity nature of the fungi distribution :
 
-- Overwhelming majority of the regions have zero or near zero points.
+- Overwhelming majority of the regions have zero or near zero points.  The quadrat count plot has shown drastic difference between the quadrats.
+- From the intensity plot, The points are observed being clustered in the south-east region of BC
 - Quadrat Test and Likelihood Ratio Test indicates a significant deviation from homogeneity for the points.
 - Hot spot analysis shows only a very few prominent hot spot with low p-values.  Most regions rarely have significant distribution, and therefore are shown in purely yellow (i.e. p=1).
 
@@ -455,9 +456,11 @@ Observation :
   - It is obvious that the fungi is overwhelmingly correlated to the low elevation level.  
   - The proportion of occurrence that appears in the lowest elevation sector accounts for about 95% of the identified points.  
   - A significant clustering is observed at the low elevation.
+  - There are basically a very few (if any) occurence for elevation higher than around 400m.
 - For Forest and Distance to Water :
   - It is observed that the fungi is correlated to both Forest and distance .  
-  - Clustering of observed at the low forest level and at middle distance to water level.
+  - Clustering of observed at the low forest value range and at middle distance to water level.
+  - For the highest forest value region, the intensity has been decreasing  to near-zero intensity.
 
 ### 2.3.5 Second Moment Descriptives
 To continue the analysis, we will explore the second moment descriptives to uncover any variances and correlation characteristics of the data. 
@@ -486,7 +489,7 @@ plot(E_asc,
 
 ```
 
-As inhomogeneity has been observed, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
+However, note that the above analysis assumed homogeneity. In our case, as previous analysis reveals that there is inhomogeneity in our data, we are going to correct for inhomogeneity and reperform the test for a more accurate result. 
 ```{r cache=TRUE}
 lambda_asc <- density(asc_data_ppp, bw.ppl)
 Kinhom_asc <- Kinhom(asc_data_ppp, lambda_asc)
@@ -516,8 +519,8 @@ plot(E_asc_inhom,
 
 Finding :
 
-- When assumed homogeneity, the observed data show a strong clustering at small r value range.
-- When corrected for inhomogeneity, such clustering pattern is no longer observed.
+- When assumed homogeneity, the observed data shows a strong clustering at small r value range.
+- When corrected for inhomogeneity, except that there is some evidence pointing to clustering at the starting region r (0-10,000), obvious clustering pattern is no longer observed.
 
 
 #### 2.3.5.b Pair Correlation Function
@@ -555,25 +558,19 @@ Finding :
 
 
 ### 2.3.6 Model Fitting and Selection with AIC
-In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.
+In this section, we will proceed with model fitting and selection, in order to achieve a reasonably effective model, while following the rule of parisomny as much as possible.  We will try to start with the simplest linear models.  Then we will adjust the model acccording to the data behaviour and increase the model complexity if situation warranted.
 
+OK, as the above covariate analysis shows possibility of relation with Elevation, Dist_Water and Forest, we will start with a simple model comprising of all these three variables as below.
 ```{r}
-fit <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
-fit
-```
-
-Elevation and Forest are significant but Distance to Water isn't.  OK, then try one higher order.
-
-```{r}
-fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2), data = BC)
-fit
-```
-
-Similarly, after several rounds of tuning (the details are not shown here due to repetitive and routine nature), the following seems to be a improved fit :
-```{r}
-fit_simple <- ppm(asc_data_ppp ~ Elevation + Forest, data = BC)
+fit_simple <- ppm(asc_data_ppp ~ Elevation + Dist_Water + Forest, data = BC)
 fit_simple
-fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Forest + I(Forest^2), data = BC)
+```
+
+From this table, all three variables are found to be significant.  
+In addition, from the rhohat plots above, all three variables have not shown linear relation with the points.  So, we proceed to increment from linear to quadratic relation to increase the model complexity to see the performance.
+
+```{r}
+fit <- ppm(asc_data_ppp ~ Elevation + I(Elevation^2) + Dist_Water + I(Dist_Water^2) + Forest + I(Forest^2), data = BC)
 fit
 ```
 
@@ -594,12 +591,12 @@ anova(fit_simple, fit, test = "LRT")
 The following conclusion is drawn :
 
 - The model with quadratic terms provides a better fit to the data
-- With the delta AIC of 44, the extra complexity is well supported.
-- So, a possible model should be 
+- With such a significant delta AIC value, the extra complexity is well supported.
+- So, a possible model should be [model to be changed..........parameters to be updated............]
 
 </br>
 <center>
-$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-16.2~-~0.017~\mathrm{elevation}(u)~-~0.000003~\mathrm{elevation}(u)^2~-~0.042~\mathrm{forest}(u)~+~0.00018~\mathrm{forest}(u)^2}$ 
+$\lambda_{\mathrm{\textit{ASC}}}(u) = e^{-15.3~-~0.011~\mathrm{elevation}(u)~-~0.0000029~\mathrm{elevation}(u)^2~-~0.00035~\mathrm{forest}(u)~-~0.000000036~\mathrm{forest}(u)^2}$ 
 </center>
 </br>
 
@@ -627,13 +624,13 @@ quadrat.test(fit, nx = 4, ny = 4)
 This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 
 ### 2.3.8 Higher Order Polynomial Fitting with Spline and Validation
-As the above analysis indicated a room for improvement, we will finally try to add higher-order polynomials with the spline packages.
+As the above analysis indicated a room for improvement, we would also like to try GAMs. However, as mentioned in the lab material, GAMs should allow more flexible covariate effects, but it has not been covered in course.  So, we would just have a very brief test using some dummy parameters given in the lab materials to have an initial impression of its potential performance. 
 
 ```{r}
 library(splines)
 
 #Fit the PPP model
-fit_smooth <- ppm(asc_data_ppp ~ bs(Elevation,7) + bs(Forest, 3), data = BC, use.gam = TRUE)
+fit_smooth <- ppm(asc_data_ppp ~ bs(Elevation,5) + bs(Forest, 5) + bs(Dist_Water,5) , data = BC, use.gam = TRUE)
 
 fit_smooth
 
@@ -644,6 +641,9 @@ par_res_elev <- parres(fit_smooth, "Elevation")
 
 #Calculate the relative intensity as a function of gradient
 par_res_forest <- parres(fit_smooth, "Forest")
+
+#Calculate the relative intensity as a function of gradient
+par_res_water <- parres(fit_smooth, "Dist_Water")
 
 #Side by side plotting
 par(mfrow = c(1,2))
@@ -657,6 +657,11 @@ plot(par_res_forest,
      lwd = 2,
      main = "",
      xlab = "Forest")
+plot(par_res_water,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Distance to Water")
 
 ```
 
