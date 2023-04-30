@@ -743,7 +743,7 @@ Conclusion :
 
 - This has small p value, suggesting significant deviation from our model's prediction.  Room for further improvement is therefore expected, but it does not provide hint for how to achieve any improvement.
 - Although the model is not yet perfect, it is progressively having improvement after rounds of variables selection process.  
-- Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on available covariates like Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. )
+- Considering the fact that we are predicting the locations of one species of fungi in a biodiverse continent based only on available covariates like Elevation and Forest, and have no information on all of the many other factors that would significantly influence fungi growth (e.g. humidity, moisture level, temperature, pH value, oxygen content, etc. ), the current model has probably already been the best practically achievable version under various constraints.
 
 \newpage
 
